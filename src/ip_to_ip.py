@@ -33,8 +33,8 @@ def main():
 
     # Count co-occurrences
     x = ip2ip.groupby(["srcint", "destint"]).indices
-    y = {k:len(v) for k, v in x.items()}
-    print(y)
+    y = {k: len(v) for k, v in x.items()}
+    #print(y)
 
 
 main()
