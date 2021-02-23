@@ -31,7 +31,10 @@ def main():
     ip2ip['srcint'] = ip2ip['srcaddr'].map(srcdict)
     ip2ip['destint'] = ip2ip['destaddr'].map(destdict)
 
-    print(ip2ip.head())
+    # Count co-occurrences
+    x = ip2ip.groupby(["srcint", "destint"]).indices
+    y = {k:len(v) for k, v in x.items()}
+    print(y)
 
 
 main()
