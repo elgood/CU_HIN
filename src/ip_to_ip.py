@@ -44,8 +44,9 @@ def main():
         vals.append(list(paircount.values())[i])
 
     # Create Compressed Sparse Row Matrix
-    X = sp.csr_matrix((vals, (rows, cols)))
+    ip2ipmatrix = sp.csr_matrix((vals, (rows, cols)))
 
     print('B I G M A T R I X')
+
 
 main()
