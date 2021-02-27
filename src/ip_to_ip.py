@@ -1,5 +1,4 @@
-# IP-to-IP matrix for CU HIN class project
-# Campbell
+# IP-to-IP matrix for CU HIN project
 
 
 # import libraries
