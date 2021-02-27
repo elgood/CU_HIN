@@ -24,6 +24,8 @@ def main():
     print('02 - Create list of unique addresses')
     srcuniq = ip2ip['srcaddr'].unique()
     destuniq = ip2ip['destaddr'].unique()
+    print('Unique src ips:   ', len(srcuniq))
+    print('Unique dest ips:  ', len(destuniq))
 
     # Create address dictionaries
     print('03 - Create address dictionaries')
@@ -39,6 +41,7 @@ def main():
     print('05 - Count co-occurrences')
     pairindex = ip2ip.groupby(["srcint", "destint"]).indices
     paircount = {k: len(v) for k, v in pairindex.items()}
+    print('Paircount length = ', len(paircount))
 
     # Extracting src, dest, counts
     print('06 - Extracting src, dest, counts')
