@@ -16,26 +16,32 @@ def main():
     flags = parser.parse_args()
 
     # Open csv file
+    print('01 - Open csv file')
     with open(flags.inputfile, 'r') as infile:
         ip2ip = pd.read_csv(infile, header=None, usecols=[10, 11], names=['srcaddr', 'destaddr'])
 
     # Create list of unique addresses
+    print('02 - Create list of unique addresses')
     srcuniq = ip2ip['srcaddr'].unique()
     destuniq = ip2ip['destaddr'].unique()
 
     # Create address dictionaries
+    print('03 - Create address dictionaries')
     srcdict = dict(zip(srcuniq, range(len(srcuniq))))
     destdict = dict(zip(destuniq, range(len(destuniq))))
 
     # Map back to df
+    print('04 - Map back to df')
     ip2ip['srcint'] = ip2ip['srcaddr'].map(srcdict)
     ip2ip['destint'] = ip2ip['destaddr'].map(destdict)
 
     # Count co-occurrences
+    print('05 - Count co-occurrences')
     pairindex = ip2ip.groupby(["srcint", "destint"]).indices
     paircount = {k: len(v) for k, v in pairindex.items()}
 
     # Extracting src, dest, counts
+    print('06 - Extracting src, dest, counts')
     rows, cols, vals = [], [], []
     for i in range(len(paircount)):
         cols.append(list(paircount.keys())[i][0])    # Setting src/'x' to be column
@@ -43,6 +49,7 @@ def main():
         vals.append(list(paircount.values())[i])
 
     # Create Compressed Sparse Row Matrix
+    print('07 - Create Compressed Sparse Row Matrix')
     ip2ipmatrix = sp.csr_matrix((vals, (rows, cols)))
 
     print('B I G M A T R I X')
