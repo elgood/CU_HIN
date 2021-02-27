@@ -36,7 +36,7 @@ def main():
     # Count co-occurrences
     pairindex = ip2ip.groupby(["srcint", "destint"]).indices
     paircount = {k: len(v) for k, v in pairindex.items()}
-    print('Paircount length:  ', len(paircount))
+    print('Paircount length:    ', len(paircount))
 
     # Extracting src, dest, counts
     xypair = list(paircount.keys())
