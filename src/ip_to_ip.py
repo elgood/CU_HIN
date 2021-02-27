@@ -45,11 +45,10 @@ def main():
 
     # Extracting src, dest, counts
     print('06 - Extracting src, dest, counts')
-    rows, cols, vals = [], [], []
-    for i in range(len(paircount)):
-        cols.append(list(paircount.keys())[i][0])    # Setting src/'x' to be column
-        rows.append(list(paircount.keys())[i][1])    # Setting dest/'y' to be row
-        vals.append(list(paircount.values())[i])
+    xypair = list(paircount.keys())
+    cols = [i[0] for i in xypair]        # Setting src/'x' to be column
+    rows = [i[1] for i in xypair]        # Setting dest/'y' to be row
+    vals = list(paircount.values())      # Values
 
     # Create Compressed Sparse Row Matrix
     print('07 - Create Compressed Sparse Row Matrix')
