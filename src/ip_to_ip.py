@@ -5,6 +5,7 @@
 # import libraries
 import argparse
 import pandas as pd
+import scipy.sparse as sp
 
 
 def main():
@@ -32,9 +33,19 @@ def main():
     ip2ip['destint'] = ip2ip['destaddr'].map(destdict)
 
     # Count co-occurrences
-    x = ip2ip.groupby(["srcint", "destint"]).indices
-    y = {k: len(v) for k, v in x.items()}
-    #print(y)
+    pairindex = ip2ip.groupby(["srcint", "destint"]).indices
+    paircount = {k: len(v) for k, v in pairindex.items()}
 
+    # Extracting src, dest, counts
+    rows, cols, vals = [], [], []
+    for i in range(len(paircount)):
+        cols.append(list(paircount.keys())[i][0])    # Setting src/'x' to be column
+        rows.append(list(paircount.keys())[i][1])    # Setting dest/'y' to be row
+        vals.append(list(paircount.values())[i])
+
+    # Create Compressed Sparse Row Matrix
+    X = sp.csr_matrix((vals, (rows, cols)))
+
+    print('B I G M A T R I X')
 
 main()
