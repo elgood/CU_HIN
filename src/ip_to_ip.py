@@ -16,42 +16,35 @@ def main():
     flags = parser.parse_args()
 
     # Open csv file
-    print('01 - Open csv file')
     with open(flags.inputfile, 'r') as infile:
         ip2ip = pd.read_csv(infile, header=None, usecols=[10, 11], names=['srcaddr', 'destaddr'])
 
     # Create list of unique addresses
-    print('02 - Create list of unique addresses')
     srcuniq = ip2ip['srcaddr'].unique()
     destuniq = ip2ip['destaddr'].unique()
-    print('Unique src ips:   ', len(srcuniq))
-    print('Unique dest ips:  ', len(destuniq))
+    print('# of unique src ips:  ', len(srcuniq))
+    print('# unique dest ips  :  ', len(destuniq))
 
     # Create address dictionaries
-    print('03 - Create address dictionaries')
     srcdict = dict(zip(srcuniq, range(len(srcuniq))))
     destdict = dict(zip(destuniq, range(len(destuniq))))
 
     # Map back to df
-    print('04 - Map back to df')
     ip2ip['srcint'] = ip2ip['srcaddr'].map(srcdict)
     ip2ip['destint'] = ip2ip['destaddr'].map(destdict)
 
     # Count co-occurrences
-    print('05 - Count co-occurrences')
     pairindex = ip2ip.groupby(["srcint", "destint"]).indices
     paircount = {k: len(v) for k, v in pairindex.items()}
-    print('Paircount length = ', len(paircount))
+    print('Paircount length:  ', len(paircount))
 
     # Extracting src, dest, counts
-    print('06 - Extracting src, dest, counts')
     xypair = list(paircount.keys())
     cols = [i[0] for i in xypair]        # Setting src/'x' to be column
     rows = [i[1] for i in xypair]        # Setting dest/'y' to be row
     vals = list(paircount.values())      # Values
 
     # Create Compressed Sparse Row Matrix
-    print('07 - Create Compressed Sparse Row Matrix')
     ip2ipmatrix = sp.csr_matrix((vals, (rows, cols)))
 
     print('B I G M A T R I X')
