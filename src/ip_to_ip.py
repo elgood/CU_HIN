@@ -25,9 +25,12 @@ def main():
     print('# of unique src ips:  ', len(srcuniq))
     print('# unique dest ips  :  ', len(destuniq))
 
-    # Create address dictionaries
+    # Create address dictionaries, 'd'
     srcdict = dict(zip(srcuniq, range(len(srcuniq))))
     destdict = dict(zip(destuniq, range(len(destuniq))))
+    # Create inverse dictionaries, 'r'
+    #invsrcdict = {v: k for k, v in srcdict.items()}
+    #invdestdict = {v: k for k, v in destdict.items()}
 
     # Map back to df
     ip2ip['srcint'] = ip2ip['srcaddr'].map(srcdict)
