@@ -5,6 +5,7 @@
 import argparse
 import pandas as pd
 import scipy.sparse as sp
+import time
 
 
 def main():
@@ -16,14 +17,15 @@ def main():
     flags = parser.parse_args()
 
     # Open csv file
+    ts = time.time()
     with open(flags.inputfile, 'r') as infile:
         ip2ip = pd.read_csv(infile, header=None, usecols=[10, 11], names=['srcaddr', 'destaddr'])
 
     # Create list of unique addresses
     srcuniq = ip2ip['srcaddr'].unique()
     destuniq = ip2ip['destaddr'].unique()
-    print('# of unique src ips:  ', len(srcuniq))
-    print('# unique dest ips  :  ', len(destuniq))
+    print('Unique Src IPs     :  ', len(srcuniq))
+    print('Unique Dest IPs    :  ', len(destuniq))
 
     # Create address dictionaries, 'd'
     srcdict = dict(zip(srcuniq, range(len(srcuniq))))
@@ -47,11 +49,9 @@ def main():
     rows = [i[1] for i in xypair]        # Setting dest/'y' to be row
     vals = list(paircount.values())      # Values
 
-    # Create Compressed Sparse Row Matrix
+    # Create Compressed Sparse Row Matrix, 'D'
     ip2ipmatrix = sp.csr_matrix((vals, (rows, cols)))
-
-    print('B I G M A T R I X')
-    print(ip2ipmatrix)
+    print('Time, seconds      :  ', time.time() - ts)
 
 
 main()
