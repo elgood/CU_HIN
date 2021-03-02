@@ -1,0 +1,58 @@
+["2021-02-09_dns.01:00:00-02:00:00.log", "2021-02-09_dns.05:00:00-06:00:00.log","2021-02-12_dns.04:00:00-05:00:00.log","2021-02-27_dns.12:00:00-13:00:00.log","2021-02-28_dns.12:00:00-13:00:00.log"]
+
+-------------OUTPUT---RESULT------------------------------
+Inputing 4262178 logs ... 
+Read in cost:0:00:43.717477
+Cleaned Data 162865 
+Purn cost:0:00:00.146747
+
+Pruned Data:6479 3.978141405458509% of cleaned data
+
+3941 Clients 
+15154 Domains 
+54328 IPs
+
+Inputing 4288942 logs ... 
+Read in cost:0:00:41.922333
+Cleaned Data 142054 
+Purn cost:0:00:00.142929
+
+Pruned Data:4168 2.9340954848156335% of cleaned data
+
+4298 Clients 
+14922 Domains 
+50008 IPs
+
+Inputing 4359071 logs ... 
+Read in cost:0:00:41.738731
+Cleaned Data 136816 
+Purn cost:0:00:00.137361
+
+Pruned Data:5222 3.816805052040697% of cleaned data
+
+4184 Clients 
+12448 Domains 
+45981 IPs
+
+Inputing 6761391 logs ... 
+Read in cost:0:01:08.113956
+Cleaned Data 271079 
+Purn cost:0:00:00.303088
+
+Pruned Data:15636 5.768060233363706% of cleaned data
+
+4794 Clients 
+26301 Domains 
+71897 IPs
+
+Inputing 5089390 logs ... 
+Read in cost:0:00:56.913377
+Cleaned Data 273783 
+Purn cost:0:00:00.312794
+
+Pruned Data:13967 5.101485483028529% of cleaned data
+
+4947 Clients 
+26685 Domains 
+73513 IPs
+--------------END-------------------------------------
