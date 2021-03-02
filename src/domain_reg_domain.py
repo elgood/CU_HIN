@@ -1,5 +1,6 @@
 import argparse
 import whois
+import time
 
 #getting domain names from the input DNS file
 def getDomainName(filename):
@@ -13,15 +14,18 @@ def getDomainName(filename):
 
 #doing whois lookup for each of the domain name and printing domain name and registrar
 def whoisLookup(dname):
+    count=1
     for i in dname:
         try:
             domain = whois.query(i)
             if domain:
-                print(i+"\t"+domain.registrar+"\n")
+                print(str(count)+"\t"+i+"\t"+domain.registrar+"\n")
+#                time.sleep(10)
             else:
-                print("Nothing found for "+ i)
-        except (whois.exceptions.FailedParsingWhoisOutput, KeyError) as e:
+                print("Nothing found for "+i+"\n")
+        except (whois.exceptions.FailedParsingWhoisOutput, whois.exceptions.WhoisCommandFailed, whois.exceptions.UnknownDateFormat, KeyError) as e:
             pass
+        count=count+1
 
 def main():
 
