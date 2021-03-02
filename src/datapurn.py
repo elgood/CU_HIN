@@ -54,7 +54,7 @@ def ReadInLogs(LogList,clean=True):
                     if(line[0] != "#"): #later use re
                         DataList = line.strip().split("\t") #if not fit to the given format, program stoped
                         IPList = Answer2IP(DataList[21])
-                        if((ValidDomain(DataList[9]) and len(IPList) > 0)or not clean):
+                        if((ValidDomain(DataList[9]) and len(IPList) > 1)or not clean):
                             #print("{} -->  {}".format(DataList[9],DataList[21]))
                             ReadinLogList.append(DataList)
 
@@ -95,21 +95,16 @@ def ReadInLogs(LogList,clean=True):
     #print(len(ReadinLogList))
     return (ReadinLogList,DomainDict,ClientDict,IPDict)
 
-def Prun(LogsList,DomainDict,ClientDict,IPDict,ka=1,kb=1,kc=1): #defaulr settingska=0.25,kb=0.001,kc=3
+def Prun(LogsList,DomainDict,ClientDict,IPDict,kd=1,ka=1,kc=1): #defaulr settingska=0.25,kb=0.001,kc=3
     
-    MaxDomain = len(DomainDict)*ka #popular domain
-    MaxClient = len(LogsList)*kb   #bust client 
+    MaxDomain = len(DomainDict)*kd #popular domain
+    MaxClient = len(LogsList)*ka   #bust client 
 
     ClientNumCallDict = dict() #<string>:(<int>,<int>)
     for c in ClientDict:
 
         ClientList = ClientDict.get(c) #should not failed
         ClientNumCallDict[c] = (len(ClientList),len(set(ClientList)))
-
-    IPBlacklist = []
-    for ip in IPDict:
-        if (len(IPDict.get(ip)) ==  1): #ip address only map to one domain
-            IPBlacklist.append(ip)
 
     resultList = []
     for log in LogsList:
@@ -121,35 +116,35 @@ def Prun(LogsList,DomainDict,ClientDict,IPDict,ka=1,kb=1,kc=1): #defaulr setting
 
         #print("Client {}: call {} domain {} ; Domain {}: {}".format(log[2],ClientNum,ClientCall,log[9],DomainNum))
 
-        if(DomainNum <= MaxDomain and ClientNum <= MaxClient and ClientCall >= kc and log[21] not in IPBlacklist):
+        if(DomainNum <= MaxDomain and ClientNum <= MaxClient and ClientCall >= kc):
             resultList.append(log)
 
 
     return resultList
 
 
-def LogDataProcess(LogLists,ka=1,kb=1,kc=1,cleanFlag=True,prunFlag=True,ShowTime=True):
+def LogDataProcess(LogLists,kd=1,ka=1,kc=1,cleanFlag=True,prunFlag=True,ShowTime=True):
     
     st = datetime.now()
     CL,DD,CD,IPD = ReadInLogs(LogLists,cleanFlag)
     et = datetime.now()
     tt = et - st
     if(ShowTime):print("Read in cost:{}".format(tt))
-    print("Cleaned Data {} ".format(len(CL)))
-    #for ip in IPD:
-    #print("{}: {}".format(ip,IPD.get(ip)))
-    if(prunFlag):
-        st = datetime.now()
-        RL = Prun(CL,DD,CD,IPD,ka,kb,kc)
-        et = datetime.now()
-        tt = et - st
-        if(ShowTime):print("Purn cost:{}".format(tt))
-        print()
-        precent = 100*(len(RL)/len(CL))
-        print("Pruned Data:{} {}% of cleaned data".format(len(RL),precent))
-        CL = RL
-    
-    print()
+    if(len(CL) != 0):
+        print("Cleaned Data {} ".format(len(CL)))
+        if(prunFlag):
+            
+            st = datetime.now()
+            RL = Prun(CL,DD,CD,IPD,kd,ka,kc)
+            et = datetime.now()
+            tt = et - st
+            if(ShowTime):print("Purn cost:{}".format(tt))
+            print()
+            precent = 100*(len(RL)/len(CL))
+            print("Pruned Data:{} {}% of cleaned data".format(len(RL),precent))
+            CL = RL
+            print()
+    #else: errors
     print("{} Clients \n{} Domains \n{} IPs\n".format(len(CD),len(DD),len(IPD)))
     return (CL,DD,CD,IPD)
     
