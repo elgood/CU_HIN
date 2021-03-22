@@ -1,54 +1,62 @@
-import json
-import tldextract
 import os
+import json
+import pydnsbl
+import tldextract
+import numpy as np
+from concurrent.futures import ThreadPoolExecutor
 
 __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
 
-class Label:
+"""
+Returns label matrix for domains.
 
+If domain is on blacklist --> [1, 0]
+If domain is on whitelist --> [0, 1]
+If domain is on both blacklist and whitelist --> [1, 0]
+If domain is on neither blacklist and whitelist --> [0, 0]
+
+from src.label import Label
+labeler = Label()
+labeler.get_domain_labels({"google.com": 0, "test.com": 1})
+"""
+class Label:
+    # Acceptable TLDs
     whitelist = ["gov", "mil"]
 
-    """
-    Returns label for domain.
-
-    If domain is on blacklist -> "malicious"
-    If domain is on whitelist -> "good"
-    If domain is on both blacklist and whitelist -> "malicious"
-    If domain is on neither blacklist or whitelist -> "malicious"
-    """
-    def getDomainLabel(self, domain):
-        if (self.isDomainMalicious(domain)):
-            return "malicious"
-        if (self.isDomainGood(domain)):
-            return "good"
+    def label(self, domain: str) -> int:
+        with ThreadPoolExecutor() as executor:
+            isMalicious = executor.submit(self.check_for_malicious_domain, domain).result()
+            isBenign = executor.submit(self.check_for_benign_domain, domain).result()
         
-        return ""
+        if (isMalicious):
+            return 1
+        if (isBenign):
+            return 0
+        return -1
 
-    """
-    Check static blacklist to determine if domain is blacklisted
-    """
-    def isDomainMalicious(self, domain):
+    def check_for_malicious_domain(self, domain: str) -> bool:
         domainInfo = tldextract.extract(domain)
         root = '{}.{}'.format(domainInfo.domain, domainInfo.suffix).lower()
-        if domainInfo.suffix in self.whitelist:
-            return False
 
         with open(os.path.join(__location__, 'blacklist.json')) as json_file:
             blacklist = json.load(json_file)
+            blacklist = self.list_lower(blacklist)
 
-            if root in self.listToLower(blacklist):
+            if domain in blacklist or root in blacklist:
                 return True
 
-            for url in self.explodeDomain(root):
+            alternatives = self.get_domain_variations(root)
+            if 'www' not in domain:
+                alternatives += self.get_domain_variations(domain)
+
+            for url in alternatives:
                 if url in blacklist:
                     return True
             
-        return False
+        domain_checker = pydnsbl.DNSBLDomainChecker()
+        return domain_checker.check(domain).blacklisted
 
-    """
-    Check static whitelist to determine if domain is whitelisted
-    """
-    def isDomainGood(self, domain):
+    def check_for_benign_domain(self, domain: str) -> bool:
         domainInfo = tldextract.extract(domain)
         root = '{}.{}'.format(domainInfo.domain, domainInfo.suffix).lower()
         
@@ -57,39 +65,47 @@ class Label:
 
         with open(os.path.join(__location__, 'whitelist.json')) as json_file:
             whitelist = json.load(json_file)
+            whitelist = self.list_lower(whitelist)
 
-            if root in self.listToLower(whitelist):
+            if domain in whitelist or root in whitelist:
                 return True
 
-            for url in self.explodeDomain(root):
+            alternatives = self.get_domain_variations(root)
+            if 'www' not in domain:
+                alternatives += self.get_domain_variations(domain)
+
+            for url in alternatives:
                 if url in whitelist:
                     return True
         return False
 
-    """
-    Make sure variations of domains are tested
-    """
-    def explodeDomain(self, domain):
+    def get_domain_variations(self, domain: str) -> list:
         prefixes = ["https://www.", "http://www.", "www."]
         return [prefix + domain for prefix in prefixes]
 
-    """
-    Ignore case
-    """
-    def listToLower(self, list):
+    def list_lower(self, list: list) -> list:
         return [domain.lower() for domain in list]
 
+    """
+    Params: Dictionary with domain as key and index as value. Ex. {"google.com": 0}
+    Returns: Labels represented as matrix:
 
-#TODO: If Domain is in both Whitelist and Blacklist, randomally choose if "malicious" or "good"
-#TODO: Is Machine Learning being used here the same way it was used in Hindom?
-#TODO: Keep updating the whitelist --> continue searching for programatic sources as well
-#TODO: Implement threading
-#TODO: Optimize lists loads
-#TODO: Push test file
-#TODO: Change to check blacklist programatically with following package --> Initial attempt with other package had problem was spamhaus and dns
-"""   
-    # import pydnsbl
-    # domain_checker = pydnsbl.DNSBLDomainChecker()
-    # return domain_checker.check('example.org').blacklisted
-
-"""
+            If domain is on blacklist --> [1, 0]
+            If domain is on whitelist --> [0, 1]
+            If domain is on both blacklist and whitelist --> [1, 0]
+            If domain is on neither blacklist and whitelist --> [0, 0]
+    """
+    def get_domain_labels(self, domains: dict) -> np.ndarray:
+        labeled = np.zeros((len(domains), 2))
+        for domain, index in domains.items():
+            label = self.label(domain.lower())
+            if label == -1: # We don't know!
+                labeled[index, 0] = 0
+                labeled[index, 1] = 0
+            elif label == 0: # benign
+                labeled[index, 0] = 0
+                labeled[index, 1] = 1
+            else: # malicious
+                labeled[index, 0] = 1
+                labeled[index, 1] = 0
+        return labeled
