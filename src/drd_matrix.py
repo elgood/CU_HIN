@@ -108,6 +108,7 @@ def main():
         else:
             pass
     
+    # Calling dataprun package for pruning domains
     RL,TD = dataprun.GenerateWL([filename])
     DD,CD,IPD = TD
     domList = []
