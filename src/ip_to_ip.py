@@ -31,8 +31,8 @@ def main():
     srcdict = dict(zip(srcuniq, range(len(srcuniq))))
     destdict = dict(zip(destuniq, range(len(destuniq))))
     # Create inverse dictionaries, 'r'
-    #invsrcdict = {v: k for k, v in srcdict.items()}
-    #invdestdict = {v: k for k, v in destdict.items()}
+    # invsrcdict = {v: k for k, v in srcdict.items()}
+    # invdestdict = {v: k for k, v in destdict.items()}
 
     # Map back to df
     ip2ip['srcint'] = ip2ip['srcaddr'].map(srcdict)
@@ -49,9 +49,13 @@ def main():
     rows = [i[1] for i in xypair]        # Setting dest/'y' to be row
     vals = list(paircount.values())      # Values
 
-    # Create Compressed Sparse Row Matrix, 'D'
+    # Create Compressed Sparse Row Matrix
     ip2ipmatrix = sp.csr_matrix((vals, (rows, cols)))
     print('Time, seconds      :  ', time.time() - ts)
 
+    print(ip2ipmatrix)
 
-main()
+    return ip2ipmatrix
+
+if __name__ == "__main__":
+    main()
