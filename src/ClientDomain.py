@@ -1,5 +1,7 @@
 import sys
 import socket
+import pandas as pd
+import scipy.sparse as sci
 import argparse
 
 # Resolve the DNS/IP address of a given domain
@@ -31,16 +33,38 @@ def main()
     flags = parser.parse_args()
 
     with open(flags.inputfile, 'r') as infile:
-        domain = infile.readlines()
+        domain = pd.read_csv(infile, sep='\\t', header=(7), usecols=[2, 4], names=['id.orig_h', 'id.resp_h'], engine='python')
 
-    for i in domain:
+    destcol = []
+
+    for i in domain['id.resp_h']:
         try:
             result = socket.inet_aton(i)
             hostname = getHost(i)
-            if hostname: print " " + hostname.replace('\'', '' )
+            destcol.append(hostname)
+            #if hostname: print " " + hostname.replace('\'', '' )
         except socket.error:
             ip = getIP(i)
-            if ip: print " " + ip.replace('\'', '' )
+            destcol.append(ip)
+            #if ip: print " " + ip.replace('\'', '' )
+
+    domain['dest'] = destcol
+
+    # Create list of unique addresses
+    srcrowid = domain['id.orig_h'].unique()
+    destcolid = domain['dest'].unique()
+
+    domain['srcid'] = srcrowid
+    domain['destid'] = destcolid
+
+    #Count occurrences
+    ipdomain = domain.groupby(["id.orig_h", "dest"])
+    pairs = {k: len(v) for k, v in ipdomain.items()}
+    data = list(pairs.values())
+
+    #Create matrix
+    clientmatrix = sp.csr_matrix((data, (domain['srcid'], domain['destid'])))
+    return clientmatrix
 
 if __name__ == "__main__":
     main()
