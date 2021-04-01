@@ -13,17 +13,17 @@ def main():
     # Process command line arguments
     parser = argparse.ArgumentParser()
     parser.add_argument('--inputfile', type=str, required=True,
-                        help="The V5 netflow csv file created by 'flow-export -f2'.")
+                        help="Expects log file from /data/dns directory")
     flags = parser.parse_args()
 
     # Open csv file
     ts = time.time()
     with open(flags.inputfile, 'r') as infile:
-        ip2ip = pd.read_csv(infile, header=None, usecols=[10, 11], names=['srcaddr', 'destaddr'])
+        ip2ip = pd.read_csv(infile, sep='\\t', header=(7), usecols=[2, 4], names=['id.orig_h', 'id.resp_h'], engine='python')
 
     # Create list of unique addresses
-    srcuniq = ip2ip['srcaddr'].unique()
-    destuniq = ip2ip['destaddr'].unique()
+    srcuniq = ip2ip['id.orig_h'].unique()
+    destuniq = ip2ip['id.resp_h'].unique()
     print('Unique Src IPs     :  ', len(srcuniq))
     print('Unique Dest IPs    :  ', len(destuniq))
 
@@ -35,8 +35,8 @@ def main():
     # invdestdict = {v: k for k, v in destdict.items()}
 
     # Map back to df
-    ip2ip['srcint'] = ip2ip['srcaddr'].map(srcdict)
-    ip2ip['destint'] = ip2ip['destaddr'].map(destdict)
+    ip2ip['srcint'] = ip2ip['id.orig_h'].map(srcdict)
+    ip2ip['destint'] = ip2ip['id.resp_h'].map(destdict)
 
     # Count co-occurrences
     pairindex = ip2ip.groupby(["srcint", "destint"]).indices
