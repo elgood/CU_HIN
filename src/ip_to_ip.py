@@ -10,6 +10,7 @@ import dataprun
 
 
 def applyPrune(intoPFile):
+    # Implements datapruning
     LogList = []  
     LogList.append(intoPFile)   
     RL, DD, IPD = dataprun.GenerateWL(LogList)
@@ -19,15 +20,14 @@ def applyPrune(intoPFile):
 #        print("Key exists")
 #    else:
 #        print("Key does not exist")
-#    pass
     return IPD    
 
 
 def main():
     '''
-    ip_to_ip.py creates the ip to ip csr matrix for hindom project
-    
-    usage: python ip_to_ip.py --inputfile /data/dns/test_2021-03-14_dns.12:00:00-13:00:00.log
+    Ip_to_ip.py creates the ip to ip csr matrix for hindom project
+    Usage: python ip_to_ip.py --inputfile /data/dns/test_2021-03-14_dns.12:00:00-13:00:00.log
+    Requires: dataprun.py
     '''
 
     # Process command line arguments
@@ -48,21 +48,25 @@ def main():
     print('Unique Dest IPs    :  ', len(destuniq))
 
     # Implement pruning 
-    applyPrune(flags.inputfile)
-
+    IPD = applyPrune(flags.inputfile)
+    
     # Create address dictionaries, 'd'
-    srcdict = dict(zip(srcuniq, range(len(srcuniq))))
-    destdict = dict(zip(destuniq, range(len(destuniq))))
+    #srcdict = dict(zip(srcuniq, range(len(srcuniq))))               ####
+    #destdict = dict(zip(destuniq, range(len(destuniq))))            ####
     # Create inverse dictionaries, 'r'
     # invsrcdict = {v: k for k, v in srcdict.items()}
     # invdestdict = {v: k for k, v in destdict.items()}
 
     # Map back to df
-    ip2ip['srcint'] = ip2ip['id.orig_h'].map(srcdict)
-    ip2ip['destint'] = ip2ip['id.resp_h'].map(destdict)
+    #ip2ip['srcint'] = ip2ip['id.orig_h'].map(srcdict)                ###
+    #ip2ip['destint'] = ip2ip['id.resp_h'].map(destdict)              ###
+    ip2ip['srcint'] = ip2ip['id.orig_h'].map(IPD)
+    ip2ip['destint'] = ip2ip['id.resp_h'].map(IPD)
+    ip2ip = ip2ip.dropna()
+    ip2ip = ip2ip.astype({'srcint': int, 'destint': int})
 
     # Count repeat pairs 
-    pairindex = ip2ip.groupby(["srcint", "destint"]).indices
+    pairindex = ip2ip.groupby(['srcint', 'destint']).indices
     paircount = {k: len(v) for k, v in pairindex.items()}
     print('Pair count    :  ', len(paircount))
 
@@ -80,5 +84,5 @@ def main():
 
     return ip2ipmatrix
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
