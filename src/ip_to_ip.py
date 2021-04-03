@@ -6,9 +6,29 @@ import argparse
 import pandas as pd
 import scipy.sparse as sp
 import time
+import dataprun
+
+
+def applyPrune(intoPFile):
+    LogList = []  
+    LogList.append(intoPFile)   
+    RL, DD, IPD = dataprun.GenerateWL(LogList)
+#    dict1 = {'a': 1, 'b': 2, 'c': 3, 'd': 4}
+#    key_to_lookup = 'a'
+#    if key_to_lookup in dict1:
+#        print("Key exists")
+#    else:
+#        print("Key does not exist")
+#    pass
+    return IPD    
 
 
 def main():
+    '''
+    ip_to_ip.py creates the ip to ip csr matrix for hindom project
+    
+    usage: python ip_to_ip.py --inputfile /data/dns/test_2021-03-14_dns.12:00:00-13:00:00.log
+    '''
 
     # Process command line arguments
     parser = argparse.ArgumentParser()
@@ -16,16 +36,19 @@ def main():
                         help="Expects log file from /data/dns directory")
     flags = parser.parse_args()
 
-    # Open csv file
+    # Extract SRC and DEST IPs addresses as though from a csv file
     ts = time.time()
     with open(flags.inputfile, 'r') as infile:
         ip2ip = pd.read_csv(infile, sep='\\t', header=(7), usecols=[2, 4], names=['id.orig_h', 'id.resp_h'], engine='python')
 
-    # Create list of unique addresses
+    # Extract list of unique IP  addresses
     srcuniq = ip2ip['id.orig_h'].unique()
     destuniq = ip2ip['id.resp_h'].unique()
     print('Unique Src IPs     :  ', len(srcuniq))
     print('Unique Dest IPs    :  ', len(destuniq))
+
+    # Implement pruning 
+    applyPrune(flags.inputfile)
 
     # Create address dictionaries, 'd'
     srcdict = dict(zip(srcuniq, range(len(srcuniq))))
@@ -38,10 +61,10 @@ def main():
     ip2ip['srcint'] = ip2ip['id.orig_h'].map(srcdict)
     ip2ip['destint'] = ip2ip['id.resp_h'].map(destdict)
 
-    # Count co-occurrences
+    # Count repeat pairs 
     pairindex = ip2ip.groupby(["srcint", "destint"]).indices
     paircount = {k: len(v) for k, v in pairindex.items()}
-    print('Paircount length   :  ', len(paircount))
+    print('Pair count    :  ', len(paircount))
 
     # Extracting src, dest, counts
     xypair = list(paircount.keys())
