@@ -27,7 +27,7 @@ def main():
     # Process command line arguments
     parser = argparse.ArgumentParser()
     parser.add_argument('--inputfile', type=str, required=True,
-                        help="Expects log file from /data/dns directory")
+                        help='Expects log file from /data/dns directory')
     flags = parser.parse_args()
 
     # Extract SRC and DEST IPs addresses as though from a csv file
