@@ -20,7 +20,7 @@ def applyPrune(intoPFile):
 def main():
     '''
     Ip_to_ip.py creates the ip to ip csr matrix for hindom project
-    Usage: python ip_to_ip.py --inputfile /data/dns/test_2021-03-14_dns.12:00:00-13:00:00.log
+    Usage: python ip_to_ip.py --inputfile /data/dns/2021-03-14_dns.12:00:00-13:00:00.log
     Requires: dataprun.py
     '''
 
