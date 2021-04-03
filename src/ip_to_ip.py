@@ -38,8 +38,8 @@ def main():
     # Extract list of unique IP  addresses
     srcuniq = ip2ip['id.orig_h'].unique()
     destuniq = ip2ip['id.resp_h'].unique()
-    print('Unique Src IPs       :  ', len(srcuniq))
-    print('Unique Dest IPs      :  ', len(destuniq))
+    # print('Unique Src IPs       :  ', len(srcuniq))
+    # print('Unique Dest IPs      :  ', len(destuniq))
 
     # Implement pruning 
     IPD = applyPrune(flags.inputfile)
@@ -52,13 +52,13 @@ def main():
     ip2ip['destint'] = ip2ip['id.resp_h'].map(IPD)
     ip2ip = ip2ip.dropna()
     ip2ip = ip2ip.astype({'srcint': int, 'destint': int})
-    print('Unique Src IPs  PRUNED:  ', len(ip2ip['srcint'].unique()))
-    print('Unique Dest IPs PRUNED:  ', len(ip2ip['destint'].unique()))
+    # print('Unique Src IPs  PRUNED:  ', len(ip2ip['srcint'].unique()))
+    # print('Unique Dest IPs PRUNED:  ', len(ip2ip['destint'].unique()))
 
     # Count repeat pairs 
     pairindex = ip2ip.groupby(['srcint', 'destint']).indices
     paircount = {k: len(v) for k, v in pairindex.items()}
-    print('Pair count      :  ', len(paircount))
+    # print('Pair count      :  ', len(paircount))
 
     # Extracting src, dest, counts
     xypair = list(paircount.keys())
@@ -68,9 +68,9 @@ def main():
 
     # Create Compressed Sparse Row Matrix
     ip2ipmatrix = sp.csr_matrix((vals, (rows, cols)))
-    print('Time, seconds        :  ', time.time() - ts)
+    # print('Time, seconds        :  ', time.time() - ts)
 
-    print(ip2ipmatrix)
+    # print(ip2ipmatrix)
 
     return ip2ipmatrix
 
