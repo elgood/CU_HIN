@@ -38,8 +38,8 @@ def main():
     # Extract list of unique IP  addresses
     srcuniq = ip2ip['id.orig_h'].unique()
     destuniq = ip2ip['id.resp_h'].unique()
-    # print('Unique Src IPs       :  ', len(srcuniq))
-    # print('Unique Dest IPs      :  ', len(destuniq))
+    # print('Unique Src IPs       :  ', len(srcuniq))                      # QC
+    # print('Unique Dest IPs      :  ', len(destuniq))                     # QC
 
     # Implement pruning 
     IPD = applyPrune(flags.inputfile)
@@ -52,25 +52,29 @@ def main():
     ip2ip['destint'] = ip2ip['id.resp_h'].map(IPD)
     ip2ip = ip2ip.dropna()
     ip2ip = ip2ip.astype({'srcint': int, 'destint': int})
-    # print('Unique Src IPs  PRUNED:  ', len(ip2ip['srcint'].unique()))
-    # print('Unique Dest IPs PRUNED:  ', len(ip2ip['destint'].unique()))
-
+    # print('Unique Src IPs  PRUNED:  ', len(ip2ip['srcint'].unique()))    # QC
+    # print('Unique Dest IPs PRUNED:  ', len(ip2ip['destint'].unique()))   # QC
+    # print(ip2ip)                                                         # QC
+     
     # Count repeat pairs 
     pairindex = ip2ip.groupby(['srcint', 'destint']).indices
     paircount = {k: len(v) for k, v in pairindex.items()}
-    # print('Pair count      :  ', len(paircount))
+    # print('Pair count      :  ', len(paircount))                         # QC
 
     # Extracting src, dest, counts
     xypair = list(paircount.keys())
-    cols = [i[0] for i in xypair]        # Setting src/'x' to be column
-    rows = [i[1] for i in xypair]        # Setting dest/'y' to be row
-    vals = list(paircount.values())      # Values
+    cols = [i[0] for i in xypair]             # Setting src/'x' to be column
+    rows = [i[1] for i in xypair]             # Setting dest/'y' to be row
+    vals = list(paircount.values())           # Values
+    # print('cols   = ', cols)                                             # QC              
+    # print('rows   = ', rows)                                             # QC
+    # print('values = ', vals)                                             # QC
 
     # Create Compressed Sparse Row Matrix
     ip2ipmatrix = sp.csr_matrix((vals, (rows, cols)))
-    # print('Time, seconds        :  ', time.time() - ts)
+    # print('Time, seconds        :  ', time.time() - ts)                  # QC
 
-    # print(ip2ipmatrix)
+    # print(ip2ipmatrix)                                                   # QC
 
     return ip2ipmatrix
 
