@@ -65,16 +65,18 @@ def main():
     # Count repeated IP pairs 
     pairindex = ip2ip.groupby(['srcint', 'destint']).indices
     paircount = {k: len(v) for k, v in pairindex.items()}
-    # print('Pair count      :  ', len(paircount))                         # QC
+    # print('Pairindex     :  ', pairindex)
+    # print('Paircount     :  ', paircount)
+    # print('Pair count    :  ', len(paircount))                         # QC
 
     # Extracting src, dest, counts
     xypair = list(paircount.keys())
     cols = [i[0] for i in xypair]             # Setting src/'x' to be column
     rows = [i[1] for i in xypair]             # Setting dest/'y' to be row
     vals = list(paircount.values())           # Values
-    # print('cols   = ', cols)                                             # QC              
-    # print('rows   = ', rows)                                             # QC
-    # print('values = ', vals)                                             # QC
+    # print('Cols   = ', cols)                                             # QC              
+    # print('Rows   = ', rows)                                             # QC
+    # print('Values = ', vals)                                             # QC
 
     # Create Compressed Sparse Row Matrix
     ip2ipmatrix = sp.csr_matrix((vals, (rows, cols)))
