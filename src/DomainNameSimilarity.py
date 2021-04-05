@@ -8,10 +8,21 @@ from scipy.sparse import csr_matrix
 
 
 def stringSimilar(s1, s2):
+    """Returns the simiarity of two strings. See difflib documentation"""
     return SequenceMatcher(None, s1, s2).ratio()
 
 
 def similarByName(d1, d2):
+    """
+    Takes in two domains, and returns the text-based similarity of them
+
+    Parameters:
+        d1 (string): the first domain name
+        d2 (string): the second domain name
+
+    Returns:
+        float: the similarity value
+    """
     d1_split = tldextract.extract(d1)
     d2_split = tldextract.extract(d2)
 
@@ -22,11 +33,23 @@ def similarByName(d1, d2):
 
 
 def subIPSimilar(sub1, sub2):
+    """Returns the scaled difference between the CIDR block prefixes"""
     diff = abs(sub1-sub2)
     return abs((diff/255)-1)
 
 
 def networkHelper(start, d1split, d2split):
+    """
+    Helper method for network similarity between two IP addresses
+
+    Parameters:
+        start (int): the starting CIDR block to analyze from
+        d1split (list): split list of first IP address
+        d2split (list): split list of second IP address
+
+    Returns:
+        float: the similarity value
+    """
     constants = [0.5, 0.3, 0.15, 0.05]
     sum = 0
     for i in range(start):
@@ -40,6 +63,16 @@ def networkHelper(start, d1split, d2split):
 
 
 def similarByNetwork(d1_ip, d2_ip):
+    """
+    Determines network similarity between two IP addresses
+
+    Parameters:
+        d1_ip (string): the first IP address
+        d2_ip (string): the second IP address
+
+    Returns:
+        float: the similarity value
+    """
 
     with open("nomatch.p", "rb") as fp:
 
@@ -75,6 +108,17 @@ def similarByNetwork(d1_ip, d2_ip):
 
 
 def domainSimilarityAlgorithm(domain1, domain2):
+    """
+    Determines the overall similarity between two domains
+
+    Parameters:
+        domain1 (string): the first domain
+        domain2 (string): the second domain
+
+    Returns:
+        float: the similarity value
+        None: if either domain didn't resolve
+    """
     try:
         d1_ip = socket.gethostbyname(domain1)
         d2_ip = socket.gethostbyname(domain2)
@@ -92,6 +136,15 @@ def domainSimilarityAlgorithm(domain1, domain2):
 
 
 def compareDomainsMass(domain_list):
+    """
+    Creates a CSR matrix of domain similarities for each combination of domains
+
+    Parameters:
+        domain_list (list): the list of domains to compare
+
+    Returns:
+        numpy.csr_matrix: the CSR matrix of similarities between the domains
+    """
     matrix_size = len(domain_list)
     dense_list = [[0]*matrix_size]*matrix_size
 
