@@ -17,7 +17,7 @@ def applyPrune(intoPFile):
        print('An exception occurred in dataprun')  
 
 
-def main():
+def ip_to_ip():
     '''
     Ip_to_ip.py creates the ip to ip csr matrix for hindom project. Note: convention
     used for CSR matrix is value (rows, cols).
@@ -69,4 +69,4 @@ def main():
     return ip2ipmatrix
 
 if __name__ == '__main__':
-    main()
+    ip_to_ip()
