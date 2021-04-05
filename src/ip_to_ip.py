@@ -5,7 +5,7 @@
 import argparse
 import pandas as pd
 import scipy.sparse as sp
-import time
+# import time                                                               # QC
 import dataprun
 
 
@@ -37,7 +37,7 @@ def main():
     flags = parser.parse_args()
 
     # Extract SRC and DEST IPs addresses as though from a csv file and create a Pandas dataframe
-    ts = time.time()
+    # ts = time.time()                                                     # QC
     with open(flags.inputfile, 'r') as infile:
         ip2ip = pd.read_csv(infile, sep='\\t', header=(7), usecols=[2, 4], names=['id.orig_h', 'id.resp_h'], engine='python')
 
