@@ -19,8 +19,11 @@ def applyPrune(intoPFile):
 
 def main():
     '''
-    Ip_to_ip.py creates the ip to ip csr matrix for hindom project
+    Ip_to_ip.py creates the ip to ip csr matrix for hindom project. Note: convention
+    used for CSR matrix is value (rows, cols).
+     
     Usage: python ip_to_ip.py --inputfile /data/dns/2021-03-14_dns.12:00:00-13:00:00.log
+    
     Requires: dataprun.py
     '''
 
@@ -30,12 +33,12 @@ def main():
                         help='Expects log file from /data/dns directory')
     flags = parser.parse_args()
 
-    # Extract SRC and DEST IPs addresses as though from a csv file
+    # Extract SRC and DEST IPs addresses as though from a csv file and create a Pandas dataframe
     ts = time.time()
     with open(flags.inputfile, 'r') as infile:
         ip2ip = pd.read_csv(infile, sep='\\t', header=(7), usecols=[2, 4], names=['id.orig_h', 'id.resp_h'], engine='python')
 
-    # Extract list of unique IP  addresses
+    # Extract list of unique IP addresses
     srcuniq = ip2ip['id.orig_h'].unique()
     destuniq = ip2ip['id.resp_h'].unique()
     # print('Unique Src IPs       :  ', len(srcuniq))                      # QC
@@ -47,7 +50,7 @@ def main():
     # Create inverse dictionary
     # invIPD = {v: k for k, v in IPD.items()}
 
-    # Map back to df
+    # Map IP's that pass prune criteria back to DF
     ip2ip['srcint'] = ip2ip['id.orig_h'].map(IPD)
     ip2ip['destint'] = ip2ip['id.resp_h'].map(IPD)
     ip2ip = ip2ip.dropna()
@@ -56,7 +59,7 @@ def main():
     # print('Unique Dest IPs PRUNED:  ', len(ip2ip['destint'].unique()))   # QC
     # print(ip2ip)                                                         # QC
      
-    # Count repeat pairs 
+    # Count repeated IP pairs 
     pairindex = ip2ip.groupby(['srcint', 'destint']).indices
     paircount = {k: len(v) for k, v in pairindex.items()}
     # print('Pair count      :  ', len(paircount))                         # QC
