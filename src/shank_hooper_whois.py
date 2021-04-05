@@ -20,9 +20,12 @@ def getDomainName(filename):
     domain_name = []
     for i in range(8,len(domain)):
         line = domain[i].split()
-        if line[13] == 'A' or line[13] == 'AAAA':
-            domain_name.append(line[9])    
-        print(i)
+        try:
+          if line[13] == 'A' or line[13] == 'AAAA':
+              domain_name.append(line[9])    
+          print(i)
+        except Exception:
+          print("Ran into problem on line " + str(i))
 
     domain_names = set(domain_name)
     return domain_names
@@ -44,6 +47,7 @@ def main():
         csv_writer.writerow(["expiration_date, registrar, creation_data"])
         for domain_name in domain_names:
             whois_data = whoIsQuery(domain_name)
+            print(whois_data)
             csv_writer.writerow([whois_data[0],whois_data[1],whois_data[2]])
 
 if __name__=="__main__":
