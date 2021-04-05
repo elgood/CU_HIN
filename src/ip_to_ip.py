@@ -1,61 +1,72 @@
-# IP-to-IP matrix for CU HIN project
-
-
-# import libraries
 import argparse
 import pandas as pd
 import scipy.sparse as sp
-import time
+import dataprun
 
 
-def main():
+def applyPrune(intoPFile):
+    '''
+    Implements data pruning using dataprun.py
+    '''
+    try:
+       LogList = []  
+       LogList.append(intoPFile)   
+       RL, DD, IPD = dataprun.GenerateWL(LogList)
+       return IPD 
+    except:
+       print('An exception occurred in dataprun')  
+
+
+def ip_to_ip():
+    '''
+    Ip_to_ip.py creates the ip to ip csr matrix for hindom project. Note: convention
+    used for CSR matrix is value (rows, cols).
+     
+    Usage: python ip_to_ip.py --inputfile /data/dns/2021-03-14_dns.12:00:00-13:00:00.log
+    
+    Requires: dataprun.py
+    '''
 
     # Process command line arguments
     parser = argparse.ArgumentParser()
     parser.add_argument('--inputfile', type=str, required=True,
-                        help="Expects log file from /data/dns directory")
+                        help='Expects log file from /data/dns directory')
     flags = parser.parse_args()
 
-    # Open csv file
-    ts = time.time()
+    # Extract SRC and DEST IPs addresses as though from a csv file and create a Pandas dataframe
     with open(flags.inputfile, 'r') as infile:
         ip2ip = pd.read_csv(infile, sep='\\t', header=(7), usecols=[2, 4], names=['id.orig_h', 'id.resp_h'], engine='python')
 
-    # Create list of unique addresses
+    # Extract list of unique source and destination IP addresses
     srcuniq = ip2ip['id.orig_h'].unique()
     destuniq = ip2ip['id.resp_h'].unique()
-    print('Unique Src IPs     :  ', len(srcuniq))
-    print('Unique Dest IPs    :  ', len(destuniq))
 
-    # Create address dictionaries, 'd'
-    srcdict = dict(zip(srcuniq, range(len(srcuniq))))
-    destdict = dict(zip(destuniq, range(len(destuniq))))
-    # Create inverse dictionaries, 'r'
-    # invsrcdict = {v: k for k, v in srcdict.items()}
-    # invdestdict = {v: k for k, v in destdict.items()}
+    # Apply data pruning to list of IP addresses 
+    IPD = applyPrune(flags.inputfile)
+    
+    # Create inverse dictionary
+    # invIPD = {v: k for k, v in IPD.items()}
 
-    # Map back to df
-    ip2ip['srcint'] = ip2ip['id.orig_h'].map(srcdict)
-    ip2ip['destint'] = ip2ip['id.resp_h'].map(destdict)
-
-    # Count co-occurrences
-    pairindex = ip2ip.groupby(["srcint", "destint"]).indices
+    # Map IP's that pass prune criteria back to dataframe 
+    ip2ip['srcint'] = ip2ip['id.orig_h'].map(IPD)
+    ip2ip['destint'] = ip2ip['id.resp_h'].map(IPD)
+    ip2ip = ip2ip.dropna()                         # Pruning will create NaN's
+    ip2ip = ip2ip.astype({'srcint': int, 'destint': int})
+     
+    # Find and count number of occurrence of repeated IP pairs 
+    pairindex = ip2ip.groupby(['srcint', 'destint']).indices
     paircount = {k: len(v) for k, v in pairindex.items()}
-    print('Paircount length   :  ', len(paircount))
 
     # Extracting src, dest, counts
     xypair = list(paircount.keys())
-    cols = [i[0] for i in xypair]        # Setting src/'x' to be column
-    rows = [i[1] for i in xypair]        # Setting dest/'y' to be row
-    vals = list(paircount.values())      # Values
+    cols = [i[0] for i in xypair]                 # Setting src/'x' to be column
+    rows = [i[1] for i in xypair]                 # Setting dest/'y' to be row
+    vals = list(paircount.values())               # Values
 
     # Create Compressed Sparse Row Matrix
     ip2ipmatrix = sp.csr_matrix((vals, (rows, cols)))
-    print('Time, seconds      :  ', time.time() - ts)
-
-    print(ip2ipmatrix)
 
     return ip2ipmatrix
 
-if __name__ == "__main__":
-    main()
+if __name__ == '__main__':
+    ip_to_ip()
