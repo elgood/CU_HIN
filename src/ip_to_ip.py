@@ -1,7 +1,3 @@
-# ip-to-iP matrix for CU HIN project
-
-
-# import libraries
 import argparse
 import pandas as pd
 import scipy.sparse as sp
