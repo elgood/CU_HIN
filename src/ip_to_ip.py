@@ -11,10 +11,13 @@ import dataprun
 
 def applyPrune(intoPFile):
     # Implements datapruning
-    LogList = []  
-    LogList.append(intoPFile)   
-    RL, DD, IPD = dataprun.GenerateWL(LogList)
-    return IPD    
+    try:
+       LogList = []  
+       LogList.append(intoPFile)   
+       RL, DD, IPD = dataprun.GenerateWL(LogList)
+       return IPD 
+    except:
+       print('An exception occurred in dataprun')  
 
 
 def main():
