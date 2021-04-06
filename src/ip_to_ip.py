@@ -9,13 +9,32 @@ def applyPrune(intoPFile):
     Implements data pruning using dataprun.py
     '''
     try:
-       LogList = []  
-       LogList.append(intoPFile)   
+       LogList = []
+       LogList.append(intoPFile)
        RL, DD, IPD = dataprun.GenerateWL(LogList)
-       return IPD 
+       return IPD
     except:
-       print('An exception occurred in dataprun')  
+       print('An exception occurred in dataprun')
 
+
+def createCSR(df):
+    '''
+    Pandas dataframe that must contain 'srcint' and 'destint' representing integer values of IPs from a dictionary.  Note: no NaN's allowed.
+    '''
+    # Find and count number of occurrences of repeated IP pairs 
+    pairindex = df.groupby(['srcint', 'destint']).indices
+    paircount = {k: len(v) for k, v in pairindex.items()}
+
+    # Extracting src, dest, counts
+    xypair = list(paircount.keys())
+    cols = [i[0] for i in xypair]                 # Setting src/'x' to be column
+    rows = [i[1] for i in xypair]                 # Setting dest/'y' to be row
+    vals = list(paircount.values())               # Values
+
+    # Create Compressed Sparse Row Matrix
+    ip2ipmatrix = sp.csr_matrix((vals, (rows, cols)))
+
+    return ip2ipmatrix
 
 def ip_to_ip():
     '''
@@ -37,29 +56,20 @@ def ip_to_ip():
     with open(flags.inputfile, 'r') as infile:
         ip2ip = pd.read_csv(infile, sep='\\t', header=(7), usecols=[2, 4], names=['id.orig_h', 'id.resp_h'], engine='python')
 
-    # Apply data pruning to list of IP addresses 
+    # Apply data pruning to list of IP addresses from same input log 
     IPD = applyPrune(flags.inputfile)
-     
+
     # Map IP's that pass prune criteria back to dataframe 
     ip2ip['srcint'] = ip2ip['id.orig_h'].map(IPD)
     ip2ip['destint'] = ip2ip['id.resp_h'].map(IPD)
     ip2ip = ip2ip.dropna()                         # Pruning will create NaN's
     ip2ip = ip2ip.astype({'srcint': int, 'destint': int})
-   
-    # Find and count number of occurrences of repeated IP pairs 
-    pairindex = ip2ip.groupby(['srcint', 'destint']).indices
-    paircount = {k: len(v) for k, v in pairindex.items()}
 
-    # Extracting src, dest, counts
-    xypair = list(paircount.keys())
-    cols = [i[0] for i in xypair]                 # Setting src/'x' to be column
-    rows = [i[1] for i in xypair]                 # Setting dest/'y' to be row
-    vals = list(paircount.values())               # Values
+    # Create CSR 
+    ip2ipmatrix = createCSR(ip2ip)
 
-    # Create Compressed Sparse Row Matrix
-    ip2ipmatrix = sp.csr_matrix((vals, (rows, cols)))
-    
     return ip2ipmatrix
-    
+
+
 if __name__ == '__main__':
     ip_to_ip()
