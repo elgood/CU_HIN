@@ -36,14 +36,14 @@ def ip_to_ip():
     # Extract SRC and DEST IPs addresses as though from a csv file and create a Pandas dataframe
     with open(flags.inputfile, 'r') as infile:
         ip2ip = pd.read_csv(infile, sep='\\t', header=(7), usecols=[2, 4], names=['id.orig_h', 'id.resp_h'], engine='python')
-
+    
     # Extract list of unique source and destination IP addresses
     srcuniq = ip2ip['id.orig_h'].unique()
     destuniq = ip2ip['id.resp_h'].unique()
 
     # Apply data pruning to list of IP addresses 
     IPD = applyPrune(flags.inputfile)
-    
+     
     # Create inverse dictionary
     # invIPD = {v: k for k, v in IPD.items()}
 
@@ -53,7 +53,7 @@ def ip_to_ip():
     ip2ip = ip2ip.dropna()                         # Pruning will create NaN's
     ip2ip = ip2ip.astype({'srcint': int, 'destint': int})
      
-    # Find and count number of occurrence of repeated IP pairs 
+    # Find and count number of occurrences of repeated IP pairs 
     pairindex = ip2ip.groupby(['srcint', 'destint']).indices
     paircount = {k: len(v) for k, v in pairindex.items()}
 
@@ -65,7 +65,7 @@ def ip_to_ip():
 
     # Create Compressed Sparse Row Matrix
     ip2ipmatrix = sp.csr_matrix((vals, (rows, cols)))
-
+    
     return ip2ipmatrix
 
 if __name__ == '__main__':
