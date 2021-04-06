@@ -9,8 +9,9 @@ import csv
 
 def whoIsQuery(domain):
     data = whois.query(domain)
-    (expiration, registrar, creation) = data.expiration_date, data.registrar, data.creation_date
-    return(expiration, registrar, creation)
+    if data is not None:
+        (expiration, registrar, creation) = data.expiration_date, data.registrar, data.creation_date
+        return(expiration, registrar, creation)
 
 #open the file in read only. Search through file for 'A' or 'AAAA'
 #if either are found, so to the 9th column and pull the domain from there
@@ -22,8 +23,7 @@ def getDomainName(filename):
         line = domain[i].split()
         try:
           if line[13] == 'A' or line[13] == 'AAAA':
-              domain_name.append(line[9])    
-          print(i)
+              domain_name.append(line[9])  
         except Exception:
           print("Ran into problem on line " + str(i))
 
@@ -37,7 +37,7 @@ def main():
     #write the domains pulled to a new file and split with lines
     #file = open('domain_name.txt', 'w')
     #for domain_name in domain_names:
-    #    file.write(domain_name + '\n')
+        #file.write(domain_name + '\n')
     #file.close()
     #return domain_names
 
@@ -47,11 +47,14 @@ def main():
         csv_writer.writerow(["expiration_date, registrar, creation_data"])
         for domain_name in domain_names:
             whois_data = whoIsQuery(domain_name)
-            print(whois_data)
-            csv_writer.writerow([whois_data[0],whois_data[1],whois_data[2]])
-
+            if whois_data is not None:
+                #print(whois_data)
+                csv_writer.writerow([whois_data[0],whois_data[1],whois_data[2]])
+            else:
+                print(domain_name)
 if __name__=="__main__":
     main()
+
 
 
 #from whois take domain registry domain info
