@@ -8,6 +8,7 @@ def applyPrune(intoPFile):
     '''
     Implements data pruning using dataprun.py
     '''
+
     try:
        LogList = []
        LogList.append(intoPFile)
@@ -21,6 +22,7 @@ def createCSR(df):
     '''
     Pandas dataframe that must contain 'srcint' and 'destint' representing integer values of IPs from a dictionary.  Note: no NaN's allowed.
     '''
+
     # Find and count number of occurrences of repeated IP pairs 
     pairindex = df.groupby(['srcint', 'destint']).indices
     paircount = {k: len(v) for k, v in pairindex.items()}
