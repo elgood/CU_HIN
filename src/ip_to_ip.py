@@ -34,7 +34,7 @@ def createCSR(df):
     vals = list(paircount.values())               # Values
 
     # Create Compressed Sparse Row Matrix
-    ip2ipmatrix = sp.csr_matrix((vals, (rows, cols)))
+    ip2ipmatrix = sp.csr_matrix((vals, (cols, rows)))
 
     return ip2ipmatrix
 
