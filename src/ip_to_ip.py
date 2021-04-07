@@ -58,14 +58,12 @@ def ip_to_ip():
     with open(flags.inputfile, 'r') as infile:
         ip2ip = pd.read_csv(infile, sep='\\t', header=(7), usecols=[2, 4], names=['id.orig_h', 'id.resp_h'], engine='python')
 
-    # Apply data pruning to list of IP addresses from same input log 
-    IPD = applyPrune(flags.inputfile)
-
-    # Map IP's that pass prune criteria back to dataframe 
-    ip2ip['srcint'] = ip2ip['id.orig_h'].map(IPD)
-    ip2ip['destint'] = ip2ip['id.resp_h'].map(IPD)
-    ip2ip = ip2ip.dropna()                         # Pruning will create NaN's
-    ip2ip = ip2ip.astype({'srcint': int, 'destint': int})
+    # Data pruning 
+    IPD = applyPrune(flags.inputfile)                          # Use dataprun on same log
+    ip2ip['srcint'] = ip2ip['id.orig_h'].map(IPD)              # Map IP's that pass prune criteria back to dataframe 
+    ip2ip['destint'] = ip2ip['id.resp_h'].map(IPD)             # " " "
+    ip2ip = ip2ip.dropna()                                     # Pruning will create NaN's
+    ip2ip = ip2ip.astype({'srcint': int, 'destint': int})      # NaN's created fp
 
     # Create CSR 
     ip2ipmatrix = createCSR(ip2ip)
