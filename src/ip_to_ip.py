@@ -40,10 +40,9 @@ def createCSR(df):
 
 def ip_to_ip():
     '''
-    Ip_to_ip.py creates the ip to ip csr matrix for hindom project. Note: convention
-    used for CSR matrix is value (rows, cols).
+    Ip_to_ip.py creates the ip to ip csr matrix for hindom project. 
      
-    Usage: python ip_to_ip.py --inputfile /data/dns/2021-03-14_dns.12:00:00-13:00:00.log
+    Example usage: python ip_to_ip.py --inputfile /data/dns/2021-03-14_dns.12:00:00-13:00:00.log
     
     Requires: dataprun.py
     '''
