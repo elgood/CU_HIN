@@ -293,7 +293,7 @@ def GenerateWL(LogLists,kd=1,ka=1,kc=1,ShowTime=True):
     Return:  A tuple of following items:
     Dictionary RL: Valid Domain<String>:Client<String>:IPList (Answer) <list<String>>
     Dictionary of all valid Domains: Domain<String>:index<int>
-    Dictionart of all valid Client and Answeres IPs: IP<String>:index<int>
+    Dictionary of all valid Client and Answeres IPs: IP<String>:index<int>
 
     If an error occur, return None
  
