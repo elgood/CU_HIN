@@ -1,7 +1,8 @@
-numpy==1.20.1
-pandas==1.2.1
-pydnsbl==1.1.2
-scipy==1.6.0
-sklearn==0.0
-tldextract==3.1.0
+numpy
+pandas
+pydnsbl
+scipy
+sklearn
+tldextract
+whois
 pytest
