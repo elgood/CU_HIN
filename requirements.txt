@@ -5,3 +5,4 @@ scipy
 sklearn
 tldextract
 whois
+pytest
