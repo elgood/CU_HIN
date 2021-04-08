@@ -4,16 +4,28 @@ import scipy.sparse as sp
 import dataprun
 
 
-def applyPrune(intoPFile):
+def createIpToIpDF(inputDFFileName):
+    '''
+    Creates Dataframe from input log file
+    '''
+
+    ip2ipDF = pd.read_csv(inputDFFileName, sep='\\t', header=(7), usecols=[2, 4], names=['id.orig_h', 'id.resp_h'], engine='python')
+    
+    return ip2ipDF
+
+
+def applyPrune(intoPRUNEFileName):
     '''
     Implements data pruning using dataprun.py
     '''
-
+   
     try:
        LogList = []
-       LogList.append(intoPFile)
+       LogList.append(intoPRUNEFileName)
        RL, DD, IPD = dataprun.GenerateWL(LogList)
+       
        return IPD
+    
     except:
        print('An exception occurred in dataprun')
 
@@ -22,7 +34,7 @@ def createCSR(df):
     '''
     Pandas dataframe that must contain 'srcint' and 'destint' representing integer values of IPs from a dictionary.  Note: no NaN's allowed.
     '''
-
+    
     # Find and count number of occurrences of repeated IP pairs 
     pairindex = df.groupby(['srcint', 'destint']).indices
     paircount = {k: len(v) for k, v in pairindex.items()}
@@ -38,6 +50,7 @@ def createCSR(df):
 
     return ip2ipmatrix
 
+
 def ip_to_ip():
     '''
     Ip_to_ip.py creates the ip to ip csr matrix for hindom project. 
@@ -46,7 +59,7 @@ def ip_to_ip():
     
     Requires: dataprun.py
     '''
-
+    
     # Process command line arguments
     parser = argparse.ArgumentParser()
     parser.add_argument('--inputfile', type=str, required=True,
@@ -55,10 +68,12 @@ def ip_to_ip():
 
     # Extract SRC and DEST IPs addresses as though from a csv file and create a Pandas dataframe
     with open(flags.inputfile, 'r') as infile:
-        ip2ip = pd.read_csv(infile, sep='\\t', header=(7), usecols=[2, 4], names=['id.orig_h', 'id.resp_h'], engine='python')
+        ip2ip = createIpToIpDF(infile)
+    
+    commonFileName = flags.inputfile  
 
     # Data pruning 
-    IPD = applyPrune(flags.inputfile)                          # Use dataprun on same log
+    IPD = applyPrune(commonFileName)                           # Use dataprun on same log
     ip2ip['srcint'] = ip2ip['id.orig_h'].map(IPD)              # Map IP's that pass prune criteria back to dataframe 
     ip2ip['destint'] = ip2ip['id.resp_h'].map(IPD)             # " " "
     ip2ip = ip2ip.dropna()                                     # Pruning will create NaN's
