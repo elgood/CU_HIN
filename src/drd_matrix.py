@@ -1,6 +1,8 @@
 """
 - script_name : drd_matrix.py
-- script can be run with command 'python3 drd_matrix.py --inputfile <dns_log_filename>
+- script can be run with command 'python3 drd_matrix.py --inputfile <dns_log_filename> --num <number_of_domain_names>
+    '--num' flag is optional, but if not specified, it will use all domain_names found in the file 
+    to form the matrix which will be large and takes lot of time.
 - script will fetch 'domain names' from the dns query-requests from file and use filter
 it aginst the domain name dictionary which contains whitelisted domain names retuend by 
 dataprune script. 
@@ -15,6 +17,7 @@ import whois
 import time
 from scipy.sparse import csr_matrix
 import dataprun
+import socket
 
 def csrMatrix(domainNameList, regR):
 
@@ -93,16 +96,22 @@ def whoisLookup(dnameList, num):
 
     #try-except to catch errors when registar lookups fail due to unknown domain_names or
     #invalid format of data returned.
+    cnt = 0
     for i in domNames:
         try:
             lookupResult = whois.query(i)
             if lookupResult:
                 regR[i] = lookupResult.registrar
+                cnt = cnt+1
             else:
                 count = count+1
-        except (whois.exceptions.FailedParsingWhoisOutput, whois.exceptions.WhoisCommandFailed, whois.exceptions.UnknownDateFormat, KeyError) as e:
+                cnt = cnt+1
+        except (whois.exceptions.FailedParsingWhoisOutput, whois.exceptions.WhoisCommandFailed, whois.exceptions.UnknownDateFormat, socket.error, ConnectionResetError, OSError, KeyError) as e:
             count = count+1
+            cnt=cnt+1
+            time.sleep(3)
             pass
+    print(f"\nNumber of lookups : {cnt}")
     return regR, count
 
 def drdMatrix(filename, num, flag):

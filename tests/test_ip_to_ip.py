@@ -2,7 +2,7 @@ import pytest
 import pandas as pd
 import numpy as np
 
-from ip_to_ip import createCSR
+from src.ip_to_ip import createCSR
 # from ip_to_ip import ip_to_ip
 # from ip_to_ip import applyPrune
 

@@ -4,7 +4,6 @@ import scipy.sparse as sp
 import dataprun
 import logging
 
-
 def createCSR(df):
     '''
     Pandas dataframe that must contain 'src' and 'dest' representing integer values of IPs from a dictionary.  Note: no NaN's allowed.
