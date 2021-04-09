@@ -61,8 +61,6 @@ def ip_to_ip(ip2index: dict, filenames: list):
     # Convert to integers
     ip2ip['src'] = ip2ip['src'].map(ip2index) # Map IP's to index values
     ip2ip['dest'] = ip2ip['dest'].map(ip2index) # " " "
-    for index, row in ip2ip.iterrows():
-      print(row)
     ip2ip = ip2ip.astype({'src': int, 'dest': int}) # Convert to integers      
 
     # Create CSR 
