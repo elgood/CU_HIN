@@ -1,42 +1,16 @@
 import argparse
 import pandas as pd
 import scipy.sparse as sp
-from src import dataprun
-
-
-def createIpToIpDF(inputDFFileName):
-    '''
-    Creates Dataframe from input log file
-    '''
-
-    ip2ipDF = pd.read_csv(inputDFFileName, sep='\\t', header=(7), usecols=[2, 4], names=['id.orig_h', 'id.resp_h'], engine='python')
-    
-    return ip2ipDF
-
-
-def applyPrune(intoPRUNEFileName):
-    '''
-    Implements data pruning using dataprun.py
-    '''
-   
-    try:
-       LogList = []
-       LogList.append(intoPRUNEFileName)
-       RL, DD, IPD = dataprun.GenerateWL(LogList)
-       
-       return IPD
-    
-    except:
-       print('An exception occurred in dataprun')
-
+import dataprun
+import logging
 
 def createCSR(df):
     '''
-    Pandas dataframe that must contain 'srcint' and 'destint' representing integer values of IPs from a dictionary.  Note: no NaN's allowed.
+    Pandas dataframe that must contain 'src' and 'dest' representing integer values of IPs from a dictionary.  Note: no NaN's allowed.
     '''
     
     # Find and count number of occurrences of repeated IP pairs 
-    pairindex = df.groupby(['srcint', 'destint']).indices
+    pairindex = df.groupby(['src', 'dest']).indices
     paircount = {k: len(v) for k, v in pairindex.items()}
 
     # Extracting src, dest, counts
@@ -51,33 +25,45 @@ def createCSR(df):
     return ip2ipmatrix
 
 
-def ip_to_ip():
+def ip_to_ip(ip2index: dict, filenames: list):
     '''
     Ip_to_ip.py creates the ip to ip csr matrix for hindom project. 
-     
-    Example usage: python ip_to_ip.py --inputfile /data/dns/2021-03-14_dns.12:00:00-13:00:00.log
-    
-    Requires: dataprun.py
+
+    Arguments:
+    ip2index: dict - Mapping from 
+    filenames: list - The files with the netflow.
     '''
     
-    # Process command line arguments
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--inputfile', type=str, required=True,
-                        help='Expects log file from /data/dns directory')
-    flags = parser.parse_args()
+    # Extract SRC and DEST IPs addresses as though from a csv file and 
+    # create a Pandas dataframe
+    filename = filenames[0]
+    ip2ip =  pd.read_csv(filename, sep=',', header=0, usecols=[10, 11], 
+                            names=['src', 'dest'], engine='python')
+ 
 
-    # Extract SRC and DEST IPs addresses as though from a csv file and create a Pandas dataframe
-    with open(flags.inputfile, 'r') as infile:
-        ip2ip = createIpToIpDF(infile)
+    for i in range(1, len(filenames)):
+        filename = filenames[i]
+        with open(filename, 'r') as infile:
+            more = pd.read_csv(filename, sep='\\t', header=0, usecols=[10, 11], 
+                            names=['src', 'dest'], engine='python')
+            ip2ip = ip2ip.concat(more)
+
+    indices = []
+    for index, row in ip2ip.iterrows():
+      if row['src'] not in ip2index or row['dest'] not in ip2index:
+        indices.append(index)
+   
+    lenbefore = len(ip2ip)
+    ip2ip = ip2ip.drop(indices) 
+    logging.info("Kept " + str(float(100* len(ip2ip))/lenbefore)  + 
+                 "% of netflow rows.")
     
-    commonFileName = flags.inputfile  
-
-    # Data pruning 
-    IPD = applyPrune(commonFileName)                           # Use dataprun on same log
-    ip2ip['srcint'] = ip2ip['id.orig_h'].map(IPD)              # Map IP's that pass prune criteria back to dataframe 
-    ip2ip['destint'] = ip2ip['id.resp_h'].map(IPD)             # " " "
-    ip2ip = ip2ip.dropna()                                     # Pruning will create NaN's
-    ip2ip = ip2ip.astype({'srcint': int, 'destint': int})      # NaN's created fp
+    # Convert to integers
+    ip2ip['src'] = ip2ip['src'].map(ip2index) # Map IP's to index values
+    ip2ip['dest'] = ip2ip['dest'].map(ip2index) # " " "
+    for index, row in ip2ip.iterrows():
+      print(row)
+    ip2ip = ip2ip.astype({'src': int, 'dest': int}) # Convert to integers      
 
     # Create CSR 
     ip2ipmatrix = createCSR(ip2ip)
@@ -86,4 +72,14 @@ def ip_to_ip():
 
 
 if __name__ == '__main__':
-    ip_to_ip()
+    # Process command line arguments
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--dns_files", type=str, nargs='+', required=True,
+      help="The dns log file(s) to use.")
+    parser.add_argument('--netflow_files', type=str, required=True, nargs='+',
+                        help='Expects log file from /data/dns directory')
+
+    flags = parser.parse_args()
+
+    RL, domain2index, ip2index =  GenerateWL(FLAGS.dns_files)
+    ip_to_ip(ip2index, FLAGS.netflow_files)
