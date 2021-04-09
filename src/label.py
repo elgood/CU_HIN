@@ -4,6 +4,7 @@ import pydnsbl
 import tldextract
 import numpy as np
 from concurrent.futures import ThreadPoolExecutor
+import logging
 
 __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
 
@@ -35,6 +36,7 @@ class Label:
         return -1
 
     def check_for_malicious_domain(self, domain: str) -> bool:
+        logging.debug("Checking if domain " + domain + " is on blocklist.")
         domainInfo = tldextract.extract(domain)
         root = '{}.{}'.format(domainInfo.domain, domainInfo.suffix).lower()
 
@@ -54,7 +56,13 @@ class Label:
                     return True
             
         domain_checker = pydnsbl.DNSBLDomainChecker()
-        return domain_checker.check(domain).blacklisted
+
+        try:
+          result = domain_checker.check(domain).blacklisted
+        except ValueError:
+          logging.warn("Error checking domain: " + domain)
+          result = False
+        return 
 
     def check_for_benign_domain(self, domain: str) -> bool:
         domainInfo = tldextract.extract(domain)

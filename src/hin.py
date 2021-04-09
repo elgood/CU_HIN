@@ -5,6 +5,7 @@ import logging
 from DomainNameSimilarity import getDomainSimilarityCSR
 from ip_to_ip import ip_to_ip
 from time import time
+from label import Label
 
 def main():
   message  =("Runs a hetergeneous information network on the supplied data.")
@@ -26,6 +27,7 @@ def main():
   FLAGS = parser.parse_args()
   process_common_arguments(FLAGS)
 
+
   logging.info("DNS files: " + str(FLAGS.dns_files))
   logging.info("Netflow files: " + str(FLAGS.netflow_files))
 
@@ -39,6 +41,11 @@ def main():
   logging.info("Number of ips in ip2index " + str(len(ip2index)))
   logging.info("Domain matrix size: " + str(domainMatrixSize))
 
+  ################## Labels #######################################
+  label = Label()
+  labels = label.get_domain_labels(domain2index)
+  logging.info("Shape of labels: " + str(labels.shape))
+ 
   ################### Domain similarity ##########################
   if not FLAGS.exclude_domain_similarity:
     time1 = time()
@@ -65,7 +72,9 @@ def main():
   else:
     logging.info("Excluding ip2ip")
     ip2ip = None
-  
+ 
+ 
+ 
 
 if __name__ == '__main__':
   main()
