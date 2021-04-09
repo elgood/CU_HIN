@@ -1,7 +1,7 @@
 import argparse
 import pandas as pd
 import scipy.sparse as sp
-import dataprun
+from src import dataprun
 
 
 def createIpToIpDF(inputDFFileName):

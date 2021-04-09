@@ -25,7 +25,7 @@ def getHost(ip):
     except Exception:
         return False
 
-def main()
+def main():
     # Process command line arguments
     parser = argparse.ArgumentParser()
     parser.add_argument('--inputfile', type=str, required=True,
