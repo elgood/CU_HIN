@@ -50,8 +50,6 @@ def ip_to_ip(ip2index: dict, filenames: list):
             ip2ip = ip2ip.concat(more)
 
     indices = []
-    print("blah")
-    print(len(ip2ip))
     for index, row in ip2ip.iterrows():
       if row['src'] not in ip2index or row['dest'] not in ip2index:
         indices.append(index)
@@ -60,7 +58,6 @@ def ip_to_ip(ip2index: dict, filenames: list):
     ip2ip = ip2ip.drop(indices) 
     logging.info("Kept " + str(float(100* len(ip2ip))/lenbefore)  + 
                  "% of netflow rows.")
-    print("blahblah")
     
     # Convert to integers
     ip2ip['src'] = ip2ip['src'].map(ip2index) # Map IP's to index values
