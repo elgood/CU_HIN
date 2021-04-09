@@ -62,7 +62,7 @@ class Label:
         except ValueError:
           logging.warn("Error checking domain: " + domain)
           result = False
-        return 
+        return result
 
     def check_for_benign_domain(self, domain: str) -> bool:
         domainInfo = tldextract.extract(domain)
