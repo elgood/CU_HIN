@@ -7,6 +7,34 @@ import argparse
 # Resolve the DNS/IP address of a given domain
 # data returned in the format: (name, aliaslist, addresslist)
 
+def getClientQueriesDomainCSR(responseLog: dict,
+                              domain2index: dict,
+                              ip2index: dict) -> sci.csr:
+  """ Returns compressed sparse row of which clients queried which domains.
+  
+  Arguments:
+  responseLog: dict - The response log dictionary from data pruning code.
+ 
+  Return:
+  compressed sparse row matrix
+  """
+  
+  maxIp     = max(ip2index.values()) + 1
+  maxDomain = max(domain2index.values()) + 1
+  lol = sci.lil_matrix((maxIp, maxDomain))  
+
+  for domain in responseLog:
+    for client in responseLog[domain]:
+      ipIndex     = ip2index[client]
+      domainIndex = domain2index[domain]
+      lol[ipIndex, domainIndex] = 1
+
+  return lol.tocsr()
+          
+    
+  
+
+
 # Returns the first IP that responds
 def getIP(d):
     try:

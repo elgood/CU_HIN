@@ -7,6 +7,7 @@ from ip_to_ip import ip_to_ip
 from time import time
 from label import Label
 from domain2IP_matrix import getDomainResolveIpCSR
+from ClientDomain import getClientQueriesDomainCSR
 
 def main():
   message  =("Runs a hetergeneous information network on the supplied data.")
@@ -26,6 +27,8 @@ def main():
     help="If set, will not compute domain similarity.")
   parser.add_argument('--exclude_domain2ip', action='store_true',
     help="If set, will not compute domainResolveIp.")
+  parser.add_argument('--exclude_clientQdomain', action='store_true',
+    help="If set, will not compute clientQueryDomain.")
 
   FLAGS = parser.parse_args()
   process_common_arguments(FLAGS)
@@ -35,6 +38,7 @@ def main():
   logging.info("Netflow files: " + str(FLAGS.netflow_files))
 
   RL, domain2index, ip2index =  GenerateWL(FLAGS.dns_files)
+  print(RL)
   domain2ip = GenerateDomain2IP(RL, domain2index)
 
   numDomains = len(domain2ip) 
@@ -93,6 +97,17 @@ def main():
   else:
     logging.info("Excluding domainResolveIp")
     domainResolveIp = None
+
+  ################## Client query domain ############################
+  if not FLAGS.exclude_clientQdomain:
+    time1 = time()
+    clientQueryDomain = getClientQueriesDomainCSR(RL, domain2index, ip2index) 
+    logging.info("Time for clientQueryDomain " + str(time() - time1))
+    nnz = clientQueryDomain.nnz
+    total = ipMatrixSize * domainMatrixSize
+    logging.info("nonzero entries (" + str(nnz) + "/" + str(total) + 
+                 ") in  " + str(float(100 * nnz) / total) + "%")
+
 
  
 
