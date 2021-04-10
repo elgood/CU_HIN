@@ -7,65 +7,62 @@ import pandas as pd
 import scipy.sparse as sp
 import time
 import dataprun
+import logging
 
-#def applyPrune(intoPFile):
-#    '''
-#    Implements data pruning using dataprun.py
-#    '''
-#    try:
-#       LogList = []
-#       LogList.append(intoPFile)
-#       RL, DD, IPD = dataprun.GenerateWL(LogList)
-#       return RL,DD, IPD
-#    except:
-#       print('An exception occurred in dataprun')
 
+def getDomainResolveIpCSR(domain2ip: dict,
+                          domain2index: dict,
+                          ip2index: dict) -> sp.csr:
+  """ Returns the domain resolve IP compressed sparse row matrix
+  Arguments:
+  domain2ip: dict - Mapping from domains to ip.
+  domain2index: dict - Mapping from domain to index.
+  ip2index: dict - Mapping from ip to index.
+  Return:
+  csr matrix representing the domain to ip mapping
+  """
+
+  domainMatrixSize = max(domain2index.values()) + 1
+  logging.info("Number of domains (possible): " + str(domainMatrixSize))
+  ipMatrixSize = max(ip2index.values()) + 1
+  logging.info("Number of ips (possible): " + str(ipMatrixSize))
+
+  num_ips = len(ip2index)
+
+  lil=sp.lil_matrix((domainMatrixSize, ipMatrixSize))
+
+  # Create index for the domain and IP dictionaries brought in from dataprun
+  for domain in domain2ip:
+    domain_index=domain2index[domain]
+    for ip in domain2ip[domain]:
+      ip_index=ip2index[ip]
+      lil[domain_index,ip_index]=1
+
+  csr = lil.tocsr()
+
+  return csr
 
 
 def main():
-    '''
-    domain2IP_matrix.py creates the domain to ip csr matrix for hindom project
-    Usage: python3 domain2IP_matrix.py --inputfile /data/dns/2021-03-29_dns.05:00:00-06:00:00.log
-    Requires: dataprun.py
-    '''
+  '''
+  domain2IP_matrix.py creates the domain to ip csr matrix for hindom project
+  Usage: python3 domain2IP_matrix.py --inputfiles /data/dns/2021-03-29_dns.05:00:00-06:00:00.log ...
+  Requires: dataprun.py
+  '''
 
-    # Process command line arguments
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--inputfile', type=str, required=True,
-                        help='Expects log file from /data/dns directory')
-    flags = parser.parse_args()
+  # Process command line arguments
+  parser = argparse.ArgumentParser()
+  parser.add_argument('--dns_files', type=str, required=True, nargs='+',
+                      help='Expects log file from /data/dns directory')
+  FLAGS = parser.parse_args()
 
-       # Implement pruning
-#    IPD = applyPrune(flags.inputfile)
-#   Here, the RL (Record List) from dataprun has list of domains that have corresponding IP addresses
-    LogList = []  #argument to ReadInLogs function in dataprun
-    LogList.append(flags.inputfile) 
-    RL, DD, IPD = dataprun.GenerateWL(LogList) # RL(Record List), DD(Domain Dictionary), IPD(IP Dictionary)
+  RL, domain2index, ip2index =  dataprun.GenerateWL(FLAGS.dns_files)
+  domain2ip = dataprun.GenerateDomain2IP(RL, domain2index)
 
-#   Create sparse matrix of domain to IP relations
-    num_domains=len(DD)
-    num_ips=len(IPD)
-
-    lil=sp.lil_matrix((num_domains,num_ips))
-
-#   Create index for the domain and IP dictionaries brought in from dataprun
-    for domain in RL:
-        domain_index=DD[domain]
-        for ip in RL[domain]:
-            #print("ip="+ip)
-            ip_index=IPD[ip]
-            lil[domain_index,ip_index]=1
-
-
-    csr1=lil.tocsr()
-#    print(csr1)
-
-#    print(DD)
-#    print('----------------')
-
-
-    return csr1
+  # Create sparse matrix of domain to IP relations
+  getDomainResolveIpCSR(domain2ip, domain2index, ip2index)
+  #mymatrix = getDomainResolveIpCSR(domain2ip, domain2index, ip2index)
+  #print(mymatrix)
 
 if __name__ == '__main__':
     main()
-
