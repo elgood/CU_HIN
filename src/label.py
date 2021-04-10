@@ -1,10 +1,11 @@
-import os
 import json
+import os.path
+import logging
 import pydnsbl
 import tldextract
 import numpy as np
+
 from concurrent.futures import ThreadPoolExecutor
-import logging
 
 __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
 
@@ -21,8 +22,21 @@ labeler = Label()
 labeler.get_domain_labels({"google.com": 0, "test.com": 1})
 """
 class Label:
-    # Acceptable TLDs
-    whitelist = ["gov", "mil"]
+    def __init__(self):
+        self.cache_filename = os.path.join(__location__, 'label_cache.json')
+        self.whitelist_filename = os.path.join(__location__, 'whitelist.json')
+        self.blacklist_filename = os.path.join(__location__, 'blacklist.json')
+
+        # Acceptable TLDs
+        self.whitelist = ["gov", "mil"]
+
+        # Load cache if it exists, otherwise create it.
+        with ThreadPoolExecutor() as executor:
+            if os.path.exists(self.cache_filename):
+                executor.submit(self.__load_label_cache())
+            else:
+                self.cache = {}
+                executor.submit(self.__save_label_cache())
 
     def label(self, domain: str) -> int:
         with ThreadPoolExecutor() as executor:
@@ -30,8 +44,10 @@ class Label:
             isBenign = executor.submit(self.check_for_benign_domain, domain).result()
         
         if (isMalicious):
+            self.__add_to_label_cache(domain, 'malicious')
             return 1
         if (isBenign):
+            self.__add_to_label_cache(domain, 'benign')
             return 0
         return -1
 
@@ -40,7 +56,7 @@ class Label:
         domainInfo = tldextract.extract(domain)
         root = '{}.{}'.format(domainInfo.domain, domainInfo.suffix).lower()
 
-        with open(os.path.join(__location__, 'blacklist.json')) as json_file:
+        with open(self.blacklist_filename) as json_file:
             blacklist = json.load(json_file)
             blacklist = self.list_lower(blacklist)
 
@@ -71,7 +87,7 @@ class Label:
         if domainInfo.suffix in self.whitelist:
             return True
 
-        with open(os.path.join(__location__, 'whitelist.json')) as json_file:
+        with open(self.whitelist_filename) as json_file:
             whitelist = json.load(json_file)
             whitelist = self.list_lower(whitelist)
 
@@ -106,7 +122,9 @@ class Label:
     def get_domain_labels(self, domains: dict) -> np.ndarray:
         labeled = np.zeros((len(domains), 2))
         for domain, index in domains.items():
-            label = self.label(domain.lower())
+            domain = domain.lower()
+            cached_label = self.__check_label_cache(domain)
+            label = self.label(domain) if (cached_label == None) else cached_label
             if label == -1: # We don't know!
                 labeled[index, 0] = 0
                 labeled[index, 1] = 0
@@ -117,3 +135,30 @@ class Label:
                 labeled[index, 0] = 1
                 labeled[index, 1] = 0
         return labeled
+
+    """
+    Internal class methods for json cache management
+
+    This is a poor man's cache. It will get large, and there is no logic for cache replacement.
+    """
+    def __check_label_cache(self, domain):
+        logging.debug("Checking if domain " + domain + " is in cache.")
+        if domain in self.cache:
+            if self.cache[domain].lower() == "malicious":
+                return 1
+            elif self.cache[domain].lower() == "benign":
+                return 0
+            return -1
+
+    def __add_to_label_cache(self, domain, label):
+        self.cache[domain] = label
+        with ThreadPoolExecutor() as executor:
+            executor.submit(self.__save_label_cache)
+
+    def __load_label_cache(self):
+        with open(self.cache_filename) as json_file:
+            self.cache = json.load(json_file)
+
+    def __save_label_cache(self):
+        with open(self.cache_filename, 'w') as json_file:
+            json.dump(self.cache, json_file, indent=4)
