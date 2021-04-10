@@ -6,6 +6,7 @@ from DomainNameSimilarity import getDomainSimilarityCSR
 from ip_to_ip import ip_to_ip
 from time import time
 from label import Label
+from domain2IP_matrix import getDomainResolveIpCSR
 
 def main():
   message  =("Runs a hetergeneous information network on the supplied data.")
@@ -23,6 +24,8 @@ def main():
     help="If set, will not compute domain similarity.")
   parser.add_argument('--exclude_ip2ip', action='store_true',
     help="If set, will not compute domain similarity.")
+  parser.add_argument('--exclude_domain2ip', action='store_true',
+    help="If set, will not compute domainResolveIp.")
 
   FLAGS = parser.parse_args()
   process_common_arguments(FLAGS)
@@ -35,10 +38,12 @@ def main():
   domain2ip = GenerateDomain2IP(RL, domain2index)
 
   numDomains = len(domain2ip) 
-  domainMatrixSize = max(domain2index.values())
+  domainMatrixSize = max(domain2index.values()) + 1
+  ipMatrixSize = max(ip2index.values()) + 1
+  numIps = len(ip2index)
   logging.info("Number of domains in domain2ip " + str(numDomains))
   logging.info("Number of domains in domain2index " + str(numDomains))
-  logging.info("Number of ips in ip2index " + str(len(ip2index)))
+  logging.info("Number of ips in ip2index " + str(numIps))
   logging.info("Domain matrix size: " + str(domainMatrixSize))
 
   ################## Labels #######################################
@@ -68,12 +73,27 @@ def main():
     ip2ip = ip_to_ip(ip2index, FLAGS.netflow_files)
     logging.info("Time for ip2ip " + str(time() - time1))
     nnz = ip2ip.nnz
-    logging.info("nonzero entries (" + str(nnz) + "/")
+    total = ipMatrixSize * ipMatrixSize
+    logging.info("nonzero entries (" + str(nnz) + "/" + str(total) + 
+                 ") in ip2ip " + str(float(100 * nnz) / total) + "%")
   else:
     logging.info("Excluding ip2ip")
     ip2ip = None
  
- 
+
+  ################### Domain resolve ip #############################
+  if not FLAGS.exclude_domain2ip:
+    time1 = time()
+    domainResolveIp = getDomainResolveIpCSR(domain2ip, domain2index, ip2index) 
+    logging.info("Time for domainResolveIp " + str(time() - time1))
+    nnz = domainResolveIp.nnz
+    total = ipMatrixSize * domainMatrixSize
+    logging.info("nonzero entries (" + str(nnz) + "/" + str(total) + 
+                 ") in domainResolveIp " + str(float(100 * nnz) / total) + "%")
+  else:
+    logging.info("Excluding domainResolveIp")
+    domainResolveIp = None
+
  
 
 if __name__ == '__main__':

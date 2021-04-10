@@ -161,7 +161,7 @@ def getDomainSimilarityCSR(domain2index: dict,
     Returns:
         numpy.csr_matrix: the CSR matrix of similarities between the domains
     """
-    n = len(domain2index)
+    n = max(domain2index.values()) + 1
     lol = lil_matrix((n,n))
 
     for d1 in domain2index:
