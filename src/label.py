@@ -28,12 +28,15 @@ class Label:
         self.blacklist_filename = os.path.join(__location__, 'blacklist.json')
 
         # Acceptable TLDs
-        self.whitelist = ["gov", "mil"]
+        self.tld_whitelist = ["gov", "mil"]
 
-        # Load cache if it exists, otherwise create it.
         with ThreadPoolExecutor() as executor:
+            self.whitelist = self.list_lower(executor.submit(self.__load_json_file, self.whitelist_filename).result())
+            self.blacklist = self.list_lower(executor.submit(self.__load_json_file, self.blacklist_filename).result())
+
+            # Load cache if it exists, otherwise create it.
             if os.path.exists(self.cache_filename):
-                executor.submit(self.__load_label_cache())
+                self.cache = executor.submit(self.__load_json_file, self.cache_filename).result()
             else:
                 self.cache = {}
                 executor.submit(self.__save_label_cache())
@@ -56,20 +59,16 @@ class Label:
         domainInfo = tldextract.extract(domain)
         root = '{}.{}'.format(domainInfo.domain, domainInfo.suffix).lower()
 
-        with open(self.blacklist_filename) as json_file:
-            blacklist = json.load(json_file)
-            blacklist = self.list_lower(blacklist)
+        if domain in self.blacklist or root in self.blacklist:
+            return True
 
-            if domain in blacklist or root in blacklist:
+        alternatives = self.get_domain_variations(root)
+        if 'www' not in domain:
+            alternatives += self.get_domain_variations(domain)
+
+        for url in alternatives:
+            if url in self.blacklist:
                 return True
-
-            alternatives = self.get_domain_variations(root)
-            if 'www' not in domain:
-                alternatives += self.get_domain_variations(domain)
-
-            for url in alternatives:
-                if url in blacklist:
-                    return True
             
         domain_checker = pydnsbl.DNSBLDomainChecker()
 
@@ -81,26 +80,23 @@ class Label:
         return result
 
     def check_for_benign_domain(self, domain: str) -> bool:
+        logging.debug("Checking if domain " + domain + " is on whitelist.")
         domainInfo = tldextract.extract(domain)
         root = '{}.{}'.format(domainInfo.domain, domainInfo.suffix).lower()
         
-        if domainInfo.suffix in self.whitelist:
+        if domainInfo.suffix in self.tld_whitelist:
             return True
 
-        with open(self.whitelist_filename) as json_file:
-            whitelist = json.load(json_file)
-            whitelist = self.list_lower(whitelist)
+        if domain in self.whitelist or root in self.whitelist:
+            return True
 
-            if domain in whitelist or root in whitelist:
+        alternatives = self.get_domain_variations(root)
+        if 'www' not in domain:
+            alternatives += self.get_domain_variations(domain)
+
+        for url in alternatives:
+            if url in self.whitelist:
                 return True
-
-            alternatives = self.get_domain_variations(root)
-            if 'www' not in domain:
-                alternatives += self.get_domain_variations(domain)
-
-            for url in alternatives:
-                if url in whitelist:
-                    return True
         return False
 
     def get_domain_variations(self, domain: str) -> list:
@@ -155,10 +151,10 @@ class Label:
         with ThreadPoolExecutor() as executor:
             executor.submit(self.__save_label_cache)
 
-    def __load_label_cache(self):
-        with open(self.cache_filename) as json_file:
-            self.cache = json.load(json_file)
-
     def __save_label_cache(self):
         with open(self.cache_filename, 'w') as json_file:
             json.dump(self.cache, json_file, indent=4)
+
+    def __load_json_file(self, json_filename):
+        with open(json_filename) as json_file:
+            return json.load(json_file)
