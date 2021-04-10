@@ -1,0 +1,16 @@
+#separator \x09
+#set_separator	,
+#empty_field	(empty)
+#unset_field	-
+#path	dns
+#open	2021-02-12-04-00-07
+#fields	ts	uid	id.orig_h	id.orig_p	id.resp_h	id.resp_p	proto	trans_id	rtt	query	qclass	qclass_name	qtype	qtype_name	rcode	rcode_name	AA	TC	RD	RA	Z	answers	TTLs	rejected
+#types	time	string	addr	port	addr	port	enum	count	interval	string	count	string	count	string	count	string	bool	bool	bool	bool	count	vector[string]	vector[interval]	bool
+1613127589.523103	CcPDPbW53RlXTtkW4	192.168.75.0	16825	128.138.213.13	53	udp	371809	9	google.com	1	C_INTERNET	1	A	-	-	F	F	F	F	1	-	-	F
+1613127589.523103	CcPDPbW53RlXTtkW4	192.168.75.0	16825	128.138.213.13	53	udp	371809	9	-	1	C_INTERNET	1	A	-	-	F	F	F	F	1	0.0.0.0	-	F
+1613127589.523103	CcPDPbW53RlXTtkW4	192.168.75.1	16825	128.138.213.13	53	udp	371810	9	youtube.com	1	C_INTERNET	1	A	-	-	F	F	F	F	1	-	-	F
+1613127589.523103	CcPDPbW53RlXTtkW4	192.168.75.1	16825	128.138.213.13	53	udp	371810	9	-	1	C_INTERNET	1	A	-	-	F	F	F	F	1	0.0.0.0	-	F
+1613127589.523103	CcPDPbW53RlXTtkW4	192.168.75.2	16825	128.138.213.13	53	udp	371811	9	tmall.com	1	C_INTERNET	1	A	-	-	F	F	F	F	1	-	-	F
+1613127589.523103	CcPDPbW53RlXTtkW4	192.168.75.2	16825	128.138.213.13	53	udp	371811	9	-	1	C_INTERNET	1	A	-	-	F	F	F	F	1	0.0.0.2	-	F
+1613127589.523103	CcPDPbW53RlXTtkW4	192.168.75.3	16825	128.138.213.13	53	udp	371812	9	baidu.com	1	C_INTERNET	1	A	-	-	F	F	F	F	1	-	-	F
+1613127589.523103	CcPDPbW53RlXTtkW4	192.168.75.3	16825	128.138.213.13	53	udp	371812	9	-	1	C_INTERNET	1	A	-	-	F	F	F	F	1	0.0.0.2	-	F

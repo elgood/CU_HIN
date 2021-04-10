@@ -21,7 +21,6 @@ class TestLabel:
 
     def test_check_for_malicious_domain(self):
         actual = self.labeler.check_for_malicious_domain("creativebookmark.com")
-        print(actual)
         assert actual == True
 
     def test_case_insensitivity(self):

@@ -3,7 +3,7 @@ import unittest
 import sys
 sys.path.insert(0,"../../src")
 
-import dataprun
+from src import dataprun
 
 class TestSketch(unittest.TestCase):
 
