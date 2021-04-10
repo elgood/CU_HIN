@@ -54,9 +54,9 @@ def main():
 
   # Process command line arguments
   parser = argparse.ArgumentParser()
-  parser.add_argument('--inputfiles', type=str, required=True, nargs='+',
+  parser.add_argument('--dns_files', type=str, required=True, nargs='+',
                       help='Expects log file from /data/dns directory')
-  flags = parser.parse_args()
+  FLAGS = parser.parse_args()
 
   RL, domain2index, ip2index =  dataprun.GenerateWL(FLAGS.dns_files)
   domain2ip = GenerateDomain2IP(RL, domain2index)
