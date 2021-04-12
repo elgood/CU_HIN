@@ -1,7 +1,7 @@
 import argparse
 import pandas as pd
 import scipy.sparse as sp
-import dataprun
+from dataprun import GenerateWL
 import logging
 
 def createCSR(df):
@@ -77,7 +77,7 @@ if __name__ == '__main__':
     parser.add_argument('--netflow_files', type=str, required=True, nargs='+',
                         help='Expects log file from /data/dns directory')
 
-    flags = parser.parse_args()
+    FLAGS = parser.parse_args()
 
     RL, domain2index, ip2index =  GenerateWL(FLAGS.dns_files)
     ip_to_ip(ip2index, FLAGS.netflow_files)
