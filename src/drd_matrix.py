@@ -1,8 +1,9 @@
 """
 - script_name : drd_matrix.py
-- script can be run with command 'python3 drd_matrix.py --inputfile <dns_log_filename> --num <number_of_domain_names>
-    '--num' flag is optional, but if not specified, it will use all domain_names found in the file 
-    to form the matrix which will be large and takes lot of time.
+- For calling the script from another program,
+step1: from drd_matrix import drdMatrix
+step2: domainResgistrarMatrix = drdMatrix('filename')
+- To run the script as standalone use  command 'python3 drd_matrix.py --inputfile <dns_log_filename>
 - script will fetch 'domain names' from the dns query-requests from file and use filter
 it aginst the domain name dictionary which contains whitelisted domain names retuend by 
 dataprune script. 
@@ -18,6 +19,8 @@ import time
 from scipy.sparse import csr_matrix
 import dataprun
 import socket
+from os import path
+import json
 
 def csrMatrix(domainNameList, regR):
 
@@ -49,6 +52,7 @@ def csrMatrix(domainNameList, regR):
     #'data' is the list of positions where value is 1. 'rws' and 'cols' are corresponding 
     #row and column indices. 'shape' defines shape of the final matrix.
     drdCsrMatrix =  csr_matrix((data, (rws, cols)), shape=(len(rows),len(columns))).toarray()
+    
     return drdCsrMatrix
 
 def getDomainName(filename):
@@ -69,10 +73,14 @@ def getDomainName(filename):
         for i in range(8, limit):
             domain_name.append(domain[i].split('\t')[9])
         #Making the domain names in the list unique
-        domain_name = set(domain_name)
-    return domain_name
+#        domain_name = set(domain_name)
+        uniqueDomainNames = []
+        for i in domain_name:
+            if i not in uniqueDomainNames:
+                uniqueDomainNames.append(i)
+    return uniqueDomainNames
 
-def whoisLookup(dnameList, num):
+def whoisLookup(dnameList):
 
     """
     - Function uses 'whois' python package to query for registrar of each domain_names.
@@ -84,37 +92,64 @@ def whoisLookup(dnameList, num):
     """
 
     count = 0
-    #This part of the code is for the test to limit the number of domain_names queried
-    #to first num names. For the unittest #num=20
-    domNames = []
-    if (num == 0):
-        domNames = dnameList
-    else:
-        for i in range(num):
-            domNames.append(dnameList[i])
     regR = {}
+    newData = {}
 
     #try-except to catch errors when registar lookups fail due to unknown domain_names or
-    #invalid format of data returned.
+    #invalid format of data returned, connection reset by server due to too much queries, etc.
     cnt = 0
-    for i in domNames:
-        try:
-            lookupResult = whois.query(i)
-            if lookupResult:
-                regR[i] = lookupResult.registrar
+
+    #creating json file 'domain_registrar_cache.json' to cache whois lookup result
+    #If file does exist, first do lookup in the file and if not in file contact server
+    #if file does not exists create file and do whois lookup to server. 
+    #new lookup results are appended to the cache file
+    if path.exists('domain_registrar_cache.json'):
+        with open("domain_registrar_cache.json", "r") as cacheFile2Read:
+            cacheData = json.load(cacheFile2Read)
+        for i in dnameList:
+            if i in cacheData.keys():
+                regR[i] = cacheData[i]
                 cnt = cnt+1
             else:
+                try:
+                    lookupResult = whois.query(i)
+                    if lookupResult:
+                        regR[i] = lookupResult.registrar
+                        newData[i] = lookupResult.registrar
+                        cnt = cnt+1
+                    else:
+                        count = count+1
+                        cnt = cnt+1
+                except (whois.exceptions.FailedParsingWhoisOutput, whois.exceptions.WhoisCommandFailed, whois.exceptions.UnknownDateFormat, socket.error, ConnectionResetError, OSError, KeyError) as e:
+                    count = count+1
+                    cnt=cnt+1
+#                   time.sleep(3)
+        cacheData.update(newData)
+        with open("domain_registrar_cache.json", "w") as cachefile:
+            json.dump(cacheData, cachefile)
+    else:
+        for i in dnameList:            
+            try:
+                lookupResult = whois.query(i)
+                if lookupResult:
+                    regR[i] = lookupResult.registrar
+                    cnt = cnt+1
+                else:
+                    count = count+1
+                    cnt = cnt+1
+            except (whois.exceptions.FailedParsingWhoisOutput, whois.exceptions.WhoisCommandFailed, whois.exceptions.UnknownDateFormat, socket.error, ConnectionResetError, OSError, KeyError) as e:
                 count = count+1
-                cnt = cnt+1
-        except (whois.exceptions.FailedParsingWhoisOutput, whois.exceptions.WhoisCommandFailed, whois.exceptions.UnknownDateFormat, socket.error, ConnectionResetError, OSError, KeyError) as e:
-            count = count+1
-            cnt=cnt+1
-            time.sleep(3)
-            pass
+                cnt=cnt+1
+#               time.sleep(3)
+                pass
+        with open("domain_registrar_cache.json", "w") as cachefile:
+            json.dump(regR, cachefile)
+
     print(f"\nNumber of lookups : {cnt}")
+
     return regR, count
 
-def drdMatrix(filename, num, flag):
+def drdMatrix(filename):
 
     """
     - This is the main function in this script. It takes in two arguments: 'filename' which is
@@ -126,63 +161,67 @@ def drdMatrix(filename, num, flag):
     it's registrar, and 'csrMatrix()' which generates a CSR sparse matrix with the domain_names 
     which have same registrars.
     """
+    
+    #Marking start of run time
+    start_time = time.time()
 
     #the whois package only support these TLD
     known_tld = ['com', 'uk', 'ac_uk', 'ar', 'at', 'pl', 'be', 'biz', 'br', 'ca', 'cc', 'cl', 'club', 'cn', 'co', 'jp', 'co_jp', 'cz', 'de', 'store', 'download', 'edu', 'education', 'eu', 'fi', 'fr', 'id', 'in_', 'info', 'io', 'ir', 'is_is', 'it', 'kr', 'kz', 'lt', 'ru', 'lv', 'me', 'mobi', 'mx', 'name', 'net', 'ninja', 'se', 'nu', 'nyc', 'nz', 'online', 'org', 'pharmacy', 'press', 'pw', 'rest', 'ru_rf', 'security', 'sh', 'site', 'space', 'tech', 'tel', 'theatre', 'tickets', 'tv', 'us', 'uz', 'video', 'website', 'wiki', 'xyz']
 
     #Getting domain names from DNS sourcefile
+    print("Collecting domain names from DNS source files....\n")
     domain_name_unfiltered = getDomainName(filename)
     
-    #skipping dataprun for unittest run
-    if (flag == True):
-        # Filtering domain_names provided with known TLDs supported by the whois package.
-        filteredDomainList = []
-        for dName in domain_name_unfiltered:
-            if dName.split(".")[-1] in known_tld:
-                filteredDomainList.append(dName)
-            else:
-                pass
-    # Not skippiing dataprun for actual code run
-    else:
-        # Calling dataprun package for pruning domains
-        RL,DD,IPD = dataprun.GenerateWL([filename])
+    # Calling dataprun package for pruning domains
+    print("Calling Dataprun package for whitelisted domain names......\n")
+    RL,DD,IPD = dataprun.GenerateWL([filename])
     
-        # Filtering the whitelisted domain_names provided by dataprun package
-        # with known TLDs supported by the whois package.
-        domainList = []
-        for k,v in DD.items():
-            if k.split(".")[-1] in known_tld:
-                domainList.append(k)
-            else:
-                pass
+    # Filtering the whitelisted domain_names provided by dataprun package
+    # with known TLDs supported by the whois package.
+    domainList = []
+    for k,v in DD.items():
+        if k.split(".")[-1] in known_tld:
+            domainList.append(k)
+        else:
+            pass
 
-        # Comparing domain_names read from file with whitelisted domain_names from 
-        # dataprun package to select only domain_names that are whitelisted
-        filteredDomainList = []
-        for name in domain_name_unfiltered:
-            if name in domainList:
-                filteredDomainList.append(name)
-            else:
-                pass
+    # Comparing domain_names read from file with whitelisted domain_names from 
+    # dataprun package to select only domain_names that are whitelisted
+    print("\nFiltering domain names based on obtained whitelist...\n")
+    filteredDomainList = []
+    for name in domain_name_unfiltered:
+        if name in domainList:
+            filteredDomainList.append(name)
+        else:
+            pass
 
-        # calling 'whoisLookup()' to find registrars for the domain_names.
-        #  function returns a dictionary of 'domain_names:registrar' and count
-        # of unsuccessful registrar lookups
-    regR, count = whoisLookup(filteredDomainList, num)
+    # calling 'whoisLookup()' to find registrars for the domain_names.
+    #  function returns a dictionary of 'domain_names:registrar' and count
+    # of unsuccessful registrar lookups
+    print("Starting whois lookup for finding registrar of each domain name...\n")
+    regR, count = whoisLookup(filteredDomainList)
+    print("\nwhois lookup completed.\n")
 
     # seperating domain_names and registrar from the dictionary 'regR' in
     # to seperate lists.
     domainNameList = []
     registrarNameList = []
     for key, value in regR.items():
-        domainNameList.append(key)     # storing domain_names from the dictionary in to a new list
-        registrarNameList.append(value)   # storing reg_names from dictionary into a new list
+        domainNameList.append(key)     
+        registrarNameList.append(value)
 
     print(f"\nNumber of unseccessful registrar lookups = {count}\n")
     
     #calling 'csrMatrix()' to generate the domain-registrar-domain matrix
+    print("Generating domain_registrar_domain matrix....\n")
     _csrmatrix = csrMatrix(domainNameList,regR)
+    print("Completed.\n")
     
+    #Marking end of run time
+    end_time = time.time()
+    total_time = end_time-start_time
+    print(f"\nTotal time taken : {total_time}\n")
+
     return _csrmatrix
 
 
@@ -192,25 +231,13 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--inputfile', type=str, required=True,
                         help="input csv file")
-    parser.add_argument('--num', type=int, default=0, required=False,
-                        help="Number of domain_names used in the matrix.")
+
     FLAGS = parser.parse_args()
 
     ##DNS filename to be read stored as filename
     filename = FLAGS.inputfile 
-
-    #number of domain_names to be used in matrix stored as count
-    num = FLAGS.num 
     
-    #setting intial value of flag to 'True' to 'not skip' dataprun.
-    flag = False
-    
-    #calculating total time taken to run the script
-    start_time = time.time()
-    result = drdMatrix(filename, num, flag)
-    end_time = time.time()
-    total_time = end_time-start_time
-    print(f"\nTotal time take : {total_time}\n")
+    result = drdMatrix(filename)
     
     #printing the matrix
     print(result)
