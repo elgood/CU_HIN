@@ -46,7 +46,7 @@ def getDomainResolveIpCSR(domain2ip: dict,
 def main():
   '''
   domain2IP_matrix.py creates the domain to ip csr matrix for hindom project
-  Usage: python3 domain2IP_matrix.py --inputfiles /data/dns/2021-03-29_dns.05:00:00-06:00:00.log ...
+  Usage: python3 domain2IP_matrix.py --dns_files /data/dns/2021-03-29_dns.05:00:00-06:00:00.log ...
   Requires: dataprun.py
   '''
 
