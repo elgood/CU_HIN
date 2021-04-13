@@ -2,14 +2,33 @@ import numpy as np
 import scipy.sparse as sparse
 import scipy.stats as stats
 import pandas as pd
+import logging
 
 #See Preliminary Results for more detailed explanation on what each part does.
 
-def PathSim(M,n):
+def PathSim(M):
     '''Computes PathSim for individual metapath M.
-    Inputs: Metapath M (csr_matrix), size of matrix n (int).
     Output: Partial similarity matrix Mp (csr_matrix).'''
 
+    n = M.shape[0]
+    assert(M.shape[0], M.shape[1]),("Must be square")
+    assert(len(M.shape) == 2),("Must be square")
+
+    # Create a lil matrix because they are cheap to build incrementally.
+    Mp=sparse.lil_matrix((n,n)) 
+    rows, cols = M.nonzero()
+
+    tuples = zip(*sorted(zip(rows, cols)))
+    rows, cols = [ list(tuple) for tuple in tuples ]
+    logging.info("Number of items to perform pathsim: " + str(len(rows)))
+    for index in range(len(rows)):
+      i = rows[index]
+      j = cols[index]
+      Mp[i,j] = 2 * (float(M[i,j]) / (M[i,i] + M[j,j]))
+
+    return Mp.tocsr()
+         
+    '''
     Mp=sparse.csr_matrix((n,n)) #Creates empty csr matrix.
     w=LaplacianWeight(M,n) #Calls Laplacian weight function.
     for j in range(n):
@@ -18,6 +37,7 @@ def PathSim(M,n):
         #In j,i order to take advantage of row format.
         #There is probably a more efficent way to loop through a csr matrix than a double for loop. I will look into this later.
             Mp[i,j]=2*w*M[i,j]/(M[i,i]+mj) #Computes unweighted PathSim.
+    '''
     return Mp
 
 def LaplacianWeight(M,n,t=1):
