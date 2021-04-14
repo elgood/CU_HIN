@@ -10,19 +10,22 @@ class testDRDMatrix(unittest.TestCase):
 
     def test_matrixGen(self):
 
-        #sample list of domain names
-        domainNameList = ['prod.pinterest.global.map.fastly.net', 'r218.em.express.com', 'us3a-collab-powerpoint.officeapplf.live.com.akadns.net', 'a-ups-presence9-prod-azsc.centralus.cloudapp.azure.com', 'pool.ntp.org', 'chtbl.com', 'admin.buildpulse.com', 'vmx-prproxy.mystream2.com', 'skypedataprdcolaus00.cloudapp.net', 'northcarolinajobnetwork.com']
+        #sample domainName-index dictionary
+        domainNameIndexDictionary = {'datamixer-pa.googleapis.com': 0, 'utcnist.colorado.edu': 2, 'd28je938im599m.cloudfront.net': 3, 'surfside.io': 5, 'scontent.fapa1-2.fna.fbcdn.net': 6, 'control.preyproject.com': 7, 'imp-east.pub.local.emxdgt.com': 8, 'ipmx6.colorado.edu': 9, 's.spoutable.com': 10, 'static.vrv.co': 11, 'www.google.com': 13}
 
-        #sample dictionary with domain name and corresponding registrar
-        domainRegistrarDictionary = {'prod.pinterest.global.map.fastly.net': 'MarkMonitor Inc.', 'r218.em.express.com': 'CSC Corporate Domains, Inc.', 'us3a-collab-powerpoint.officeapplf.live.com.akadns.net': 'Akamai Technologies, Inc.', 'a-ups-presence9-prod-azsc.centralus.cloudapp.azure.com': 'MarkMonitor Inc.', 'pool.ntp.org': 'Tucows Domains Inc.', 'chtbl.com': 'NameCheap, Inc.', 'admin.buildpulse.com': 'Namespro Solutions Inc.', 'vmx-prproxy.mystream2.com': 'GoDaddy.com, LLC', 'skypedataprdcolaus00.cloudapp.net': 'MarkMonitor Inc.', 'northcarolinajobnetwork.com': 'eNom, LLC'}
+        #sample index list with successful whois lookups
+        domainNameIndexList = [0, 3, 5, 6, 7, 8, 10, 11, 13]
+
+        #sample dictionary with domain name Index and corresponding registrar
+        domainNameIndex2RegistrarDictionary = {0: 'MarkMonitor Inc.', 3: 'MarkMonitor Inc.', 5: 'Gandi SAS', 6: 'RegistrarSafe, LLC', 7: 'NameCheap, Inc.', 8: 'GoDaddy.com, LLC', 10: 'GoDaddy.com, LLC', 11: 'CCI REG S.A.', 13: 'MarkMonitor Inc.'}
 
         #Sample data for matrix
-        sampleResult = [[1, 0, 0, 1, 0, 0, 0, 0, 1, 0], [0, 1, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 1, 0, 0, 0, 0, 0, 0, 0], [1, 0, 0, 1, 0, 0, 0, 0, 1, 0], [0, 0, 0, 0, 1, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 1, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 1, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 1, 0, 0], [1, 0, 0, 1, 0, 0, 0, 0, 1, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 1]]
-        
+        sampleResult = [[1, 1, 0, 0, 0, 0, 0, 0, 1], [1, 1, 0, 0, 0, 0, 0, 0, 1], [0, 0, 1, 0, 0, 0, 0, 0, 0], [0, 0, 0, 1, 0, 0, 0, 0, 0], [0, 0, 0, 0, 1, 0, 0, 0, 0], [0, 0, 0, 0, 0, 1, 1, 0, 0], [0, 0, 0, 0, 0, 1, 1, 0, 0], [0, 0, 0, 0, 0, 0, 0, 1, 0], [1, 1, 0, 0, 0, 0, 0, 0, 1]]
+
         #calling the 'drdMatrix()' and passing filename and and flag to skip data pruning.
-        resultMatrix = csrMatrix(domainNameList,domainRegistrarDictionary)
+        resultMatrix = csrMatrix(domainNameIndexList,domainNameIndex2RegistrarDictionary)
         
-        #Storing elements in the matrix to 'testResult' to compare with 'sampleResult'
+        #Storing elements in the matrix to 'testResult' in order to compare with 'sampleResult'
         testResult = []
         for i in range(len(resultMatrix)):
             testResult.append(list(resultMatrix[i]))
