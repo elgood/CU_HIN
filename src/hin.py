@@ -10,7 +10,7 @@ from domain2IP_matrix import getDomainResolveIpCSR
 from ClientDomain import getClientQueriesDomainCSR
 from PathSim import PathSim
 from scipy.sparse import csr_matrix
-from affinity_matrix import affinity_matrix
+from affinity_matrix import affinity_matrix, converge
 
 def print_nnz_info(M: csr_matrix, name: str):
   """ Prints nnz info
@@ -46,6 +46,11 @@ def main():
     help="If set, will not compute domainResolveIp.")
   parser.add_argument('--exclude_clientQdomain', action='store_true',
     help="If set, will not compute clientQueryDomain.")
+
+  parser.add_argument('--mu', type=float, default=0.5,
+    help="Mu parameter used to balance between original labels and new info.")
+  parser.add_argument('--tol', type=float, default=0.001,
+    help="Tolerance parameter that determines when converges is close enough.")
 
   FLAGS = parser.parse_args()
   process_common_arguments(FLAGS)
@@ -200,6 +205,14 @@ def main():
                 ") in M after affinity " + str(float(100 * nnz) / total) + "%")
 
  
+  index2domain = {v: k for k, v in domain2index.items()}
+
+  ################## Iterating to convergence ########################
+  time1 = time()
+  F = converge(M, labels, FLAGS.mu, FLAGS.tol)
+  print("Y F domain")
+  for i in range(len(F)):
+    print(labels[i,:], F[i,:], index2domain[i])
  
 
 if __name__ == '__main__':
