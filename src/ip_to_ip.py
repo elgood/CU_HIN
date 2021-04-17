@@ -4,6 +4,7 @@ import scipy.sparse as sp
 from dataprun import GenerateWL
 import logging
 
+
 def createCSR(df):
     '''
     Creates CSR matrix from Pandas dataframe object. Pandas dataframe must contain a
@@ -25,40 +26,6 @@ def createCSR(df):
     ip2ipmatrix = sp.csr_matrix((vals, (cols, rows)))
 
     return ip2ipmatrix
-
-
-def ipToIpAnalysis(df):
-    '''
-    Analysis of Neflow only ip to ip.  Internal IP dictionary used.
-    '''
-    
-    # Extract list of unique source and destination IP addresses
-    NFsrcuniq = ip2ip['src'].unique()
-    NFdestuniq = ip2ip['dest'].unique()
-    print('Unique Src IPs     :  ', len(NFsrcuniq))
-    print('Unique Dest IPs    :  ', len(NFdestuniq)) 
-
-    # Create INTERNAL address dictionaries
-    NFsrcdict = dict(zip(NFsrcuniq, range(len(NFsrcuniq))))
-    NFdestdict = dict(zip(NFdestuniq, range(len(NFdestuniq))))
-
-    # Map back to df
-    ip2ip['NFsrcint'] = ip2ip['src'].map(NFsrcdict)
-    ip2ip['NFdestint'] = ip2ip['dest'].map(NFdestdict)
-
-    # Count NF co-occurrences
-    NFpairindex = ip2ip.groupby(["NFsrcint", "NFdestint"]).indices
-    NFpaircount = {k: len(v) for k, v in NFpairindex.items()}
-    print('Unique pairs of IPs  :  ', len(NFpaircount))
-    
-    # Extracting NFsrc, NFdest, NFcounts
-    NFxypair = list(NFpaircount.keys())
-    NFcols = [i[0] for i in NFxypair]        # Setting NFsrc/'x' to be column
-    NFrows = [i[1] for i in NFxypair]        # Setting NFdest/'y' to be row
-    NFvals = list(NFpaircount.values())      # NFValues 
-
-    # QC stuff here
-    # Maybe export IP list of x% most 'talkative' pairs?
 
 
 def ip_to_ip(ip2index: dict, filenames: list):
@@ -98,9 +65,9 @@ def ip_to_ip(ip2index: dict, filenames: list):
                  "% of netflow rows.")
     
     # Convert to integers
-    ip2ip['src'] = ip2ip['src'].map(ip2index) # Map IP's to index values
-    ip2ip['dest'] = ip2ip['dest'].map(ip2index) # " " "
-    ip2ip = ip2ip.astype({'src': int, 'dest': int}) # Convert to integers      
+    ip2ip['src'] = ip2ip['src'].map(ip2index)         # Map IP's to index values
+    ip2ip['dest'] = ip2ip['dest'].map(ip2index)       # " " "
+    ip2ip = ip2ip.astype({'src': int, 'dest': int})   # Convert to integers      
 
     # Create CSR 
     ip2ipmatrix = createCSR(ip2ip)
