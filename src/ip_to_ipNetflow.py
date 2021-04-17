@@ -72,7 +72,11 @@ def ip_to_ipNetflow(ip2index: dict, filenames: list):
     qcdf.to_csv('qc.csv') 
 
     # Compare Prune results with Netflow to compare how communucative potential malicious ip's talk
-
+    #print('Prune dictionary:', ip2index.keys())
+    #print('Netflow dataframe: ',ip2ipNF[['src', 'dest']] )
+    print('Number of unique Src IPs     :  ', len(ip2ipNF['src'].unique()))
+    print('Number of unique Dest IPs    :  ', len(ip2ipNF['dest'].unique()))
+    print('Number of Prune dict entries :  ', len(ip2index)) 
 
 
 if __name__ == '__main__':
