@@ -74,9 +74,11 @@ def ip_to_ipNetflow(ip2index: dict, filenames: list):
     # Compare Prune results with Netflow to compare how communucative potential malicious ip's talk
     #print('Prune dictionary:', ip2index.keys())
     #print('Netflow dataframe: ',ip2ipNF[['src', 'dest']] )
-    print('Number of unique Src IPs from Netflow    :  ', len(ip2ipNF['src'].unique()))
-    print('Number of unique Dest IPs from Netflow   :  ', len(ip2ipNF['dest'].unique()))
-    print('Number of IPs from Prune dict            :  ', len(ip2index)) 
+    print('Number of unique Src IPs from Netflow     :  ', len(ip2ipNF['src'].unique()))
+    print('Number of unique Dest IPs from Netflow    :  ', len(ip2ipNF['dest'].unique()))
+    temp = ip2ipNF[["src", "dest"]].values.ravel()
+    print('Number of unique IPs in total from Netflow:  ', len(pd.unique(temp)))
+    print('Number of IPs from Prune dict             :  ', len(ip2index)) 
 
 
 if __name__ == '__main__':
