@@ -55,7 +55,7 @@ def ip_to_ipNetflow(ip2index: dict, filenames: list):
     
     #print('Production dataframe after Prune dictionary filter: ')
     #print(ip2ipi.head(10))
-    print('Number of rows in Prduction dataframe:          ',len(ip2ip.index))
+    print('Number of rows in Production dataframe:         ',len(ip2ip.index))
 
     # Find and count number of occurrences of repeated Netflow IP pairs 
     pairindex = ip2ipNF.groupby(['src', 'dest']).indices
@@ -74,9 +74,9 @@ def ip_to_ipNetflow(ip2index: dict, filenames: list):
     # Compare Prune results with Netflow to compare how communucative potential malicious ip's talk
     #print('Prune dictionary:', ip2index.keys())
     #print('Netflow dataframe: ',ip2ipNF[['src', 'dest']] )
-    print('Number of unique Src IPs     :  ', len(ip2ipNF['src'].unique()))
-    print('Number of unique Dest IPs    :  ', len(ip2ipNF['dest'].unique()))
-    print('Number of Prune dict entries :  ', len(ip2index)) 
+    print('Number of unique Src IPs from Netflow    :  ', len(ip2ipNF['src'].unique()))
+    print('Number of unique Dest IPs from Netflow   :  ', len(ip2ipNF['dest'].unique()))
+    print('Number of IPs from Prune dict            :  ', len(ip2index)) 
 
 
 if __name__ == '__main__':
