@@ -54,7 +54,7 @@ def ip_to_ipNetflow(ip2index: dict, filenames: list):
     print('Number of rows in Input dataframe - raw netflow:',len(ip2ipNF.index))
     
     #print('Production dataframe after Prune dictionary filter: ')
-    #print(ip2ipi.head(10))
+    #print(ip2ip.head(10))
     print('Number of rows in Production dataframe:         ',len(ip2ip.index))
 
     # Find and count number of occurrences of repeated Netflow IP pairs 
@@ -62,23 +62,30 @@ def ip_to_ipNetflow(ip2index: dict, filenames: list):
     paircount = {k: len(v) for k, v in pairindex.items()}
     print('Number of repeated pairs in input Netflow logs: ', len(paircount))
     qcdf = ip2ipNF.groupby(ip2ipNF.columns.tolist(),as_index=False).size().sort_values(by=['size'],ascending=False)
-    print('Number of repeated src to dest pairs, non-"1":  ',qcdf[qcdf['size'] > 1].shape[0]) 
-    print('Number of repeated src to dest pairs, "1":      ',qcdf[qcdf['size'] == 1].shape[0]) 
+    print('Number of repeated src to dest pairs, non-"1" : ',qcdf[qcdf['size'] > 1].shape[0]) 
+    print('Number of repeated src to dest pairs, "1"     : ',qcdf[qcdf['size'] == 1].shape[0]) 
     print('Most communicative pair, per Netflow samp rate: ',max(qcdf['size']))
-    print('Mean of non-"1" pairings:                       ',qcdf[qcdf['size'] > 1].mean())
-    print('Std of non-"1" pairings:                        ',qcdf[qcdf['size'] > 1].std())
-    print('Median of non-"1" pairs:                        ',qcdf[qcdf['size'] > 1].median()) 
+    print('Mean of non-"1" pairings  :                     ',qcdf[qcdf['size'] > 1].mean())
+    print('Std of non-"1" pairings   :                     ',qcdf[qcdf['size'] > 1].std())
+    print('Median of non-"1" pairs   :                     ',qcdf[qcdf['size'] > 1].median()) 
+    
+    # Extract pairs that occur more than 1 time
     #print(qcdf.head(10)) 
-    qcdf.to_csv('qc.csv') 
+    qcdfprint = qcdf[qcdf['size'] > 1]['size']
+    qcdfprint.to_csv('qc.csv') 
 
     # Compare Prune results with Netflow to compare how communucative potential malicious ip's talk
     #print('Prune dictionary:', ip2index.keys())
     #print('Netflow dataframe: ',ip2ipNF[['src', 'dest']] )
-    print('Number of unique Src IPs from Netflow     :  ', len(ip2ipNF['src'].unique()))
-    print('Number of unique Dest IPs from Netflow    :  ', len(ip2ipNF['dest'].unique()))
+    print('Number of unique Src IPs from Netflow     :     ', len(ip2ipNF['src'].unique()))
+    print('Number of unique Dest IPs from Netflow    :     ', len(ip2ipNF['dest'].unique()))
     temp = ip2ipNF[["src", "dest"]].values.ravel()
-    print('Number of unique IPs in total from Netflow:  ', len(pd.unique(temp)))
-    print('Number of IPs from Prune dict             :  ', len(ip2index)) 
+    print('Number of unique IPs in total from Netflow:     ', len(pd.unique(temp)))
+    print('Number of IPs from Prune dictonary        :     ', len(ip2index)) 
+
+    # Extract unique IPs from Production/Prune and see how many times nefarious communicated
+    qcdf2 = pd.merge(ip2ip, ip2ipNF,  how='left', left_on=['src','dest'], right_on = ['src','dest'])
+    print(qcdf2.groupby(qcdf2.columns.tolist(),as_index=False).size().sort_values(by=['size'],ascending=False))
 
 
 if __name__ == '__main__':
