@@ -36,6 +36,7 @@ def ip_to_ipNetflow(ip2index: dict, filenames: list):
       if row['src'] not in ip2index or row['dest'] not in ip2index:
         indices.append(index)
     
+    # Save for analysis
     ip2ipNF = ip2ip                                                 # Analysis dataframe
     
     lenbefore = len(ip2ip)
@@ -48,6 +49,22 @@ def ip_to_ipNetflow(ip2index: dict, filenames: list):
     ip2ip['destInteger'] = ip2ip['dest'].map(ip2index)              # " " "
     ip2ip = ip2ip.astype({'srcInteger': int, 'destInteger': int})   # Convert to integers      
 
+    
+    # Find and count number of occurrences of repeated IP pairs 
+    pairindex = ip2ip.groupby(['src', 'dest']).indices
+    paircount = {k: len(v) for k, v in pairindex.items()}
+
+    # Extracting src, dest, counts
+    xypair = list(paircount.keys())
+    cols = [i[0] for i in xypair]                 # Setting src/'x' to be column
+    rows = [i[1] for i in xypair]                 # Setting dest/'y' to be row
+    vals = list(paircount.values())               # Values
+
+    dfPROD = pd.DataFrame(vals,columns=['size']) 
+    #print('head', dfPROD.head())
+    dfPRODprint = dfPROD[dfPROD['size'] > 1]['size']
+    dfPRODprint.to_csv('PRODqc.csv')    
+    
     ####  Analysis  ####
     #print('Input dataframe before pruning - raw Netflow:')
     #print(ip2ipNF.head(10))
