@@ -23,6 +23,7 @@ labeler.get_domain_labels({"google.com": 0, "test.com": 1})
 """
 class Label:
     def __init__(self):
+        self.cache = {}
         self.cache_filename = os.path.join(__location__, 'label_cache.json')
         self.whitelist_filename = os.path.join(__location__, 'whitelist.json')
         self.blacklist_filename = os.path.join(__location__, 'blacklist.json')
@@ -31,25 +32,28 @@ class Label:
         self.tld_whitelist = ["gov", "mil"]
 
         with ThreadPoolExecutor() as executor:
-            self.whitelist = self.list_lower(executor.submit(self.__load_json_file, self.whitelist_filename).result())
-            self.blacklist = self.list_lower(executor.submit(self.__load_json_file, self.blacklist_filename).result())
+            whitelist_future = executor.submit(self.__load_json_file, self.whitelist_filename)
+            blacklist_future = executor.submit(self.__load_json_file, self.blacklist_filename)
 
             # Load cache if it exists, otherwise create it.
             if os.path.exists(self.cache_filename):
-                self.cache = executor.submit(self.__load_json_file, self.cache_filename).result()
+                cache_future = executor.submit(self.__load_json_file, self.cache_filename)
             else:
-                self.cache = {}
-                executor.submit(self.__save_label_cache())
+                cache_future = executor.submit(self.__save_label_cache)
+
+        self.cache = cache_future.result()
+        self.whitelist = self.list_lower(whitelist_future.result())
+        self.blacklist = self.list_lower(blacklist_future.result())
 
     def label(self, domain: str) -> int:
         with ThreadPoolExecutor() as executor:
-            isMalicious = executor.submit(self.check_for_malicious_domain, domain).result()
-            isBenign = executor.submit(self.check_for_benign_domain, domain).result()
+            isMalicious_future = executor.submit(self.check_for_malicious_domain, domain)
+            isBenign_future = executor.submit(self.check_for_benign_domain, domain)
         
-        if (isMalicious):
+        if (isMalicious_future.result()):
             self.__add_to_label_cache(domain, 'malicious')
             return 1
-        if (isBenign):
+        if (isBenign_future.result()):
             self.__add_to_label_cache(domain, 'benign')
             return 0
         return -1
@@ -154,6 +158,7 @@ class Label:
     def __save_label_cache(self):
         with open(self.cache_filename, 'w') as json_file:
             json.dump(self.cache, json_file, indent=4)
+        return self.cache
 
     def __load_json_file(self, json_filename):
         with open(json_filename) as json_file:

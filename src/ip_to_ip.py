@@ -4,9 +4,12 @@ import scipy.sparse as sp
 from dataprun import GenerateWL
 import logging
 
+
 def createCSR(df):
     '''
-    Pandas dataframe that must contain 'src' and 'dest' representing integer values of IPs from a dictionary.  Note: no NaN's allowed.
+    Creates CSR matrix from Pandas dataframe object. Pandas dataframe must contain a
+    'src' and 'dest' representing integer values of IPs from a dictionary. 
+    Note: no NaN's allowed.
     '''
     
     # Find and count number of occurrences of repeated IP pairs 
@@ -32,6 +35,10 @@ def ip_to_ip(ip2index: dict, filenames: list):
     Arguments:
     ip2index: dict - Mapping from 
     filenames: list - The files with the netflow.
+
+    Example: 
+    python ip_to_ip.py --dns_files /data/dns/2021-04-10_dns.00:00:00-01:00:00.log 
+                       --netflow_files /data/converted/ft-v05.2021-04-10.000000-0600.csv
     '''
     
     # Extract SRC and DEST IPs addresses as though from a csv file and 
@@ -40,7 +47,6 @@ def ip_to_ip(ip2index: dict, filenames: list):
     ip2ip =  pd.read_csv(filename, sep=',', header=0, usecols=[10, 11], 
                             names=['src', 'dest'], engine='python')
  
-
     for i in range(1, len(filenames)):
         filename = filenames[i]
         with open(filename, 'r') as infile:
@@ -59,9 +65,9 @@ def ip_to_ip(ip2index: dict, filenames: list):
                  "% of netflow rows.")
     
     # Convert to integers
-    ip2ip['src'] = ip2ip['src'].map(ip2index) # Map IP's to index values
-    ip2ip['dest'] = ip2ip['dest'].map(ip2index) # " " "
-    ip2ip = ip2ip.astype({'src': int, 'dest': int}) # Convert to integers      
+    ip2ip['src'] = ip2ip['src'].map(ip2index)         # Map IP's to index values
+    ip2ip['dest'] = ip2ip['dest'].map(ip2index)       # " " "
+    ip2ip = ip2ip.astype({'src': int, 'dest': int})   # Convert to integers      
 
     # Create CSR 
     ip2ipmatrix = createCSR(ip2ip)

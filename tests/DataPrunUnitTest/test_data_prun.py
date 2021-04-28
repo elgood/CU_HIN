@@ -1,9 +1,9 @@
 import unittest
 #Handleing import issue: system-path at runtime
 import sys
-sys.path.insert(0,"../../src")
+sys.path.insert(1,"../../src")
 
-from src import dataprun
+import dataprun
 
 class TestSketch(unittest.TestCase):
 

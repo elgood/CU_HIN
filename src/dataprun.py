@@ -112,9 +112,10 @@ def ReadInLogs(LogList):
                     if(line[0] == "#"):
                         continue #ignore first line
 
-                    #print(line)
+                   #print(line)
                     TotalLine += 1
                     dline = line.strip().split("\t") #require given format, otherwise throw exception
+                    #print(dline)
                     IDKey = dline[2]+dline[3]+dline[4]+dline[5]+dline[7]
                     Client = dline[2]
                     Domain = dline[9]
@@ -209,7 +210,7 @@ def ReadInLogs(LogList):
     return (RL,DomainDict,ClientDict,IPDict,TotalLine)
 
 
-def Prun(DomainDict,ClientDict,IPDict,TotalCall,kd=1,ka=1,kc=1): #defaulr settingska=0.25,kb=0.001,kc=3
+def Prun(DomainDict,ClientDict,IPDict,TotalCall,kd=1,ka=1,kc=1,kip=1):
    
     """
     Description:
@@ -220,6 +221,12 @@ def Prun(DomainDict,ClientDict,IPDict,TotalCall,kd=1,ka=1,kc=1): #defaulr settin
     Client Dictionary: Client<string>: appeared times<int>>
     IP Dictionary: IP<string>: Domains<list<string>>
     Total calls: the number of DNS requests
+    
+    ka: remove large clients which is likely proxy by Ka% of clients #default 1 suggested 0.25
+    kc: remove inactive clients query less than Kc domains    #default 1 suggested 3
+    kd: remove popular domains that queried by Kd% of clients  #default 1 suggested 0.001
+    kip:  rare ips that connects to a few kip domain(s)  #default 1
+
 
 
     Return: A tuple of following items:
@@ -266,7 +273,7 @@ def Prun(DomainDict,ClientDict,IPDict,TotalCall,kd=1,ka=1,kc=1): #defaulr settin
     IPSizeAfter = 0
     for ip in IPDict:
 
-        if(len(set(IPDict.get(ip))) > 1):
+        if(len(set(IPDict.get(ip))) > kip):
             #print(ip,": ",IPDict.get(ip))
             IPNo[ip] = index
             index += 1
@@ -282,7 +289,7 @@ def Prun(DomainDict,ClientDict,IPDict,TotalCall,kd=1,ka=1,kc=1): #defaulr settin
 
 
 
-def GenerateWL(LogLists,kd=1,ka=1,kc=1,ShowTime=True):
+def GenerateWL(LogLists,kd=1,ka=1,kc=1,kip=1,ShowTime=True):
 
     """
     Description:
@@ -290,10 +297,16 @@ def GenerateWL(LogLists,kd=1,ka=1,kc=1,ShowTime=True):
     
     Argument: List of input files, parameters from Hindom paper, Flag for print out running time
 
+    ka: remove large clients which is likely proxy by Ka% of clients #default 1 suggested 0.25
+    kc: remove inactive clients query less than Kc domains    #default 1 suggested 3
+    kd: remove popular domains that queried by Kd% of clients  #default 1 suggested 0.001
+    kip:  rare ips that connects to a few kip domain(s)  #default 1
+
+
     Return:  A tuple of following items:
     Dictionary RL: Valid Domain<String>:Client<String>:IPList (Answer) <list<String>>
     Dictionary of all valid Domains: Domain<String>:index<int>
-    Dictionary of all valid Client and Answeres IPs: IP<String>:index<int>
+    Dictionart of all valid Client and Answeres IPs: IP<String>:index<int>
 
     If an error occur, return None
  
@@ -312,7 +325,7 @@ def GenerateWL(LogLists,kd=1,ka=1,kc=1,ShowTime=True):
         print()
         print("Data {} Cleaned. Start pruning ... ".format(TCalls))
         st = datetime.now()
-        DD,IPD = Prun(DD,CD,IPD,TCalls,kd,ka,kc)
+        DD,IPD = Prun(DD,CD,IPD,TCalls,kd,ka,kc,kip)
         et = datetime.now()
         tt = et - st
         if(ShowTime):

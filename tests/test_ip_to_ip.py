@@ -2,6 +2,10 @@ import pytest
 import pandas as pd
 import numpy as np
 
+import sys
+sys.path.insert(1,"/home/mihu4530/CU_HIN/src")
+
+#import ip_to_ip 
 from ip_to_ip import createCSR
 # from ip_to_ip import ip_to_ip
 # from ip_to_ip import applyPrune
@@ -14,7 +18,7 @@ def test_createCSR():
     answer = [[0,1,2],[0,0,0],[3,0,0]]                          # dense matrix
     
     # Test 
-    testData = createCSR(df_test)
+    testData = ip_to_ip.createCSR(df_test)
     testData_asArray = testData.toarray()
 
     assert np.array_equal(answer, testData_asArray)
