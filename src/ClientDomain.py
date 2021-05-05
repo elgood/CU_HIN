@@ -145,16 +145,6 @@ def main():
           "{:.2f}".format(time() - time1))
     print(clientmatrix)
 
-    if clientmatrix is not None:
-        time1 = time()
-        domainmatrix = clientmatrix.transpose()
-        domainQueriedBySameClient = domainmatrix * clientmatrix
-        print("Time to domainQueriedBySameClient " +
-                     "{:.2f}".format(time() - time1))
-        print(domainQueriedBySameClient)
-    else:
-        domainQueriedBySameClient = None
-
 
 if __name__ == "__main__":
     main()
