@@ -1,11 +1,12 @@
 import sys
 import socket
-import pandas as pd
 import scipy.sparse as sci
+from scipy.sparse import csr_matrix
 import argparse
+from dataprun import GenerateWL
+from time import time
 
-# Resolve the DNS/IP address of a given domain
-# data returned in the format: (name, aliaslist, addresslist)
+
 
 def getClientQueriesDomainCSR(responseLog: dict,
                               domain2index: dict,
@@ -27,15 +28,16 @@ def getClientQueriesDomainCSR(responseLog: dict,
     for client in responseLog[domain]:
       ipIndex     = ip2index[client]
       domainIndex = domain2index[domain]
-      lol[ipIndex, domainIndex] = 1
+      lol[ipIndex, domainIndex] += 1
 
   return lol.tocsr()
-          
-    
-  
 
 
-# Returns the first IP that responds
+
+
+# Resolve the DNS/IP address of a given domain
+# data returned in the format: (name, aliaslist, addresslist)
+# Returns the first IP that responds for Passive DNS
 def getIP(d):
     try:
         data = socket.gethostbyname(d)
@@ -44,7 +46,7 @@ def getIP(d):
     except Exception:
         return False
 
-# Returns Host name for given IP
+# Returns Host name for given IP for Passive DNS
 def getHost(ip):
     try:
         data = socket.gethostbyaddr(ip)
@@ -53,46 +55,61 @@ def getHost(ip):
     except Exception:
         return False
 
+
+
 def main():
     # Process command line arguments
     parser = argparse.ArgumentParser()
-    parser.add_argument('--inputfile', type=str, required=True,
-                        help="input csv file")
+    parser.add_argument('--inputtxtfile', type=str, required=True,
+                        help="input text file")
     flags = parser.parse_args()
 
-    with open(flags.inputfile, 'r') as infile:
-        domain = pd.read_csv(infile, sep='\\t', header=(7), usecols=[2, 4], names=['id.orig_h', 'id.resp_h'], engine='python')
+    filenames = []
+    filenames.append(flags.inputtxtfile)
 
-    destcol = []
+    readlog, domain2index, ip2index = GenerateWL(filenames)
 
-    for i in domain['id.resp_h']:
+    # Passive DNS for domains
+    for i in domain2index:
         try:
             result = socket.inet_aton(i)
             hostname = getHost(i)
-            destcol.append(hostname)
-            #if hostname: print " " + hostname.replace('\'', '' )
+            if hostname:
+                print(i + ": " + hostname.replace('\'', ''))
         except socket.error:
             ip = getIP(i)
-            destcol.append(ip)
-            #if ip: print " " + ip.replace('\'', '' )
+            if ip:
+                print(i + ": " + ip.replace('\'', ''))
 
-    domain['dest'] = destcol
-
-    # Create list of unique addresses
-    srcrowid = domain['id.orig_h'].unique()
-    destcolid = domain['dest'].unique()
-
-    domain['srcid'] = srcrowid
-    domain['destid'] = destcolid
-
-    #Count occurrences
-    ipdomain = domain.groupby(["id.orig_h", "dest"])
-    pairs = {k: len(v) for k, v in ipdomain.items()}
-    data = list(pairs.values())
+    # Passive DNS for clients
+    for i in ip2index:
+        try:
+            result = socket.inet_aton(i)
+            hostname = getHost(i)
+            if hostname:
+                print(i + ": " + hostname.replace('\'', ''))
+        except socket.error:
+            ip = getIP(i)
+            if ip:
+                print(i + ": " + ip.replace('\'', ''))
 
     #Create matrix
-    clientmatrix = sp.csr_matrix((data, (domain['srcid'], domain['destid'])))
-    return clientmatrix
+    time1 = time()
+    clientmatrix = getClientQueriesDomainCSR(readlog, domain2index, ip2index)
+    print("Time for clientmatrix " +
+          "{:.2f}".format(time() - time1))
+    print(clientmatrix)
+
+    if clientmatrix is not None:
+        time1 = time()
+        domainmatrix = clientmatrix.transpose()
+        domainQueriedBySameClient = domainmatrix * clientmatrix
+        print("Time to domainQueriedBySameClient " +
+                     "{:.2f}".format(time() - time1))
+        print(domainQueriedBySameClient)
+    else:
+        domainQueriedBySameClient = None
+
 
 if __name__ == "__main__":
     main()
