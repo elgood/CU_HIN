@@ -9,6 +9,50 @@ from concurrent.futures import ThreadPoolExecutor
 
 __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
 
+#TODO combine with Label class
+class LabelFiles:
+  """ Class that takes two files with good and bad """
+  def __init__(self, good, bad):
+    """ 
+    Arguments:
+    good: str - Location of good labels.
+    bad: str- Location of bad labels.
+    """
+
+    self.good = good
+    self.bad = bad
+
+  def get_domain_labels(self, domains: dict) -> np.ndarray:
+    
+    gdomains = []
+    bdomains = []
+
+    with open(self.good, "r") as g:
+      for line in g:
+        gdomains.append(line.rstrip())
+
+    with open(self.bad, "r") as b:
+      for line in b:
+        bdomains.append(line.rstrip())
+
+    print(gdomains)
+    print(bdomains)
+
+    labeled = np.zeros((len(domains), 2))
+    for domain, index in domains.items():
+      if domain in gdomains:
+        labeled[index, 0] = 0
+        labeled[index, 1] = 1
+      elif domain in bdomains:
+        labeled[index, 0] = 1 
+        labeled[index, 1] = 0
+      else:
+        labeled[index, 0] = 0 
+        labeled[index, 1] = 0
+  
+    return labeled
+
+
 """
 Returns label matrix for domains.
 

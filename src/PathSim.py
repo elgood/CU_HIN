@@ -12,21 +12,22 @@ def PathSim(M):
     Output: Partial similarity matrix Mp (csr_matrix).'''
 
     n = M.shape[0]
-    assert(M.shape[0], M.shape[1]),("Must be square")
+    assert(M.shape[0] == M.shape[1]),("Must be square")
     assert(len(M.shape) == 2),("Must be square")
 
     w=LaplacianWeight(M,n)
     # Create a lil matrix because they are cheap to build incrementally.
     Mp=sparse.lil_matrix((n,n)) 
     rows, cols = M.nonzero()
+    if len(rows) > 0:
 
-    tuples = zip(*sorted(zip(rows, cols)))
-    rows, cols = [ list(tuple) for tuple in tuples ]
-    logging.info("Number of items to perform pathsim: " + str(len(rows)))
-    for index in range(len(rows)):
-      i = rows[index]
-      j = cols[index]
-      Mp[i,j] = 2 * w * (float(M[i,j]) / (M[i,i] + M[j,j]))
+      tuples = zip(*sorted(zip(rows, cols)))
+      rows, cols = [ list(tuple) for tuple in tuples ]
+      logging.info("Number of items to perform pathsim: " + str(len(rows)))
+      for index in range(len(rows)):
+        i = rows[index]
+        j = cols[index]
+        Mp[i,j] = 2 * w * (float(M[i,j]) / (M[i,i] + M[j,j]))
 
     return Mp.tocsr()
 

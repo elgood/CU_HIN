@@ -2,10 +2,10 @@ import argparse
 from args import get_default_ArgumentParser, process_common_arguments
 from dataprun import GenerateWL, GenerateDomain2IP
 import logging
-from DomainNameSimilarity import getDomainSimilarityCSR
+#from DomainNameSimilarity import getDomainSimilarityCSR
 from ip_to_ip import ip_to_ip
 from time import time
-from label import Label
+from label import Label, LabelFiles
 from domain2IP_matrix import getDomainResolveIpCSR
 from ClientDomain import getClientQueriesDomainCSR
 from PathSim import PathSim
@@ -52,6 +52,11 @@ def main():
   parser.add_argument('--tol', type=float, default=0.001,
     help="Tolerance parameter that determines when converges is close enough.")
 
+  parser.add_argument('--good', type=str, default=None,
+    help="Location of file with good domains.")
+  parser.add_argument('--bad', type=str, default=None,
+    help="Location of file with bad domains.")
+
   FLAGS = parser.parse_args()
   process_common_arguments(FLAGS)
 
@@ -73,22 +78,25 @@ def main():
   logging.info("Domain matrix size: " + str(domainMatrixSize))
 
   ################## Labels #######################################
-  label = Label()
+  if FLAGS.good is not None and FLAGS.bad is not None:
+    label = LabelFiles(FLAGS.good, FLAGS.bad)
+  else:
+    label = Label()
   labels = label.get_domain_labels(domain2index)
   logging.info("Shape of labels: " + str(labels.shape))
  
   ################### Domain similarity ##########################
-  if not FLAGS.exclude_domain_similarity:
-    time1 = time()
-    domainSimilarityCSR = getDomainSimilarityCSR(domain2index,
-                                            domain2ip, 
-                                            FLAGS.domain_similarity_threshold) 
-    logging.info("Time for domain similarity " + 
-                 "{:.2f}".format(time() - time1))
-    print_nnz_info(domainSimilarityCSR, "domain similarity")
-  else:
-    logging.info("Excluding domain similarity")
-    domainSimilarityCSR = None
+  #if not FLAGS.exclude_domain_similarity:
+  #  time1 = time()
+  #  domainSimilarityCSR = getDomainSimilarityCSR(domain2index,
+  #                                          domain2ip, 
+  #                                          FLAGS.domain_similarity_threshold) 
+  #  logging.info("Time for domain similarity " + 
+  #               "{:.2f}".format(time() - time1))
+  #  print_nnz_info(domainSimilarityCSR, "domain similarity")
+  #else:
+  #  logging.info("Excluding domain similarity")
+  #  domainSimilarityCSR = None
 
 
   #################### ip to ip ###################################
@@ -160,11 +168,11 @@ def main():
   ################### Combine Matapaths ############################ 
   timeTotal = time()
   M = csr_matrix((domainMatrixSize, domainMatrixSize))
-  if domainSimilarityCSR is not None:
-    time1 = time()
-    M = M + PathSim(domainSimilarityCSR)
-    logging.info("Time pathsim domainSimilarityCSR " + 
-                 "{:.2f}".format(time() - time1))
+  #if domainSimilarityCSR is not None:
+  #  time1 = time()
+  #  M = M + PathSim(domainSimilarityCSR)
+  #  logging.info("Time pathsim domainSimilarityCSR " + 
+  #               "{:.2f}".format(time() - time1))
   if cnameCSR is not None:
     time1 = time()
     M = M + PathSim(cnamneCSR)

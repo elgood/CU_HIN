@@ -129,3 +129,5 @@ dmypy.json
 .pyre/
 
 .virtualenv
+*.swp
+label_cache.json
