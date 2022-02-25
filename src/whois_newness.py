@@ -168,7 +168,7 @@ def potential_threat_newness_criteria1(creation_date):
     # otherwise 0%
     return 0
 
-def get_domain_newness(totalSize, domains: dict, criteria=potential_threat_newness_criteria0) -> np.ndarray:
+def get_domain_newness(domains: dict, criteria=potential_threat_newness_criteria1) -> np.ndarray:
 
     #    labeled[index, 0] = 0 # 1 when domain is bad,  0 when good
     #    labeled[index, 1] = 1 # 1 when domain is good, 0 when bad
@@ -177,7 +177,7 @@ def get_domain_newness(totalSize, domains: dict, criteria=potential_threat_newne
     #    newness[index, 1] = 0     # the newness cannot affect the probability of goodness
     creation_date, _ , _ = whoisLookup_CreationDate(domains)
 
-    labeled_addition = np.zeros((totalSize, 2))
+    labeled_addition = np.zeros((len(domains), 2))
     for domain, index in domains.items():
         if index in creation_date:
             labeled_addition[index, 0] = criteria(creation_date[index])
@@ -219,7 +219,7 @@ def main():
             f.write("{} : {}\r\n".format(i,result[i]))
         f.close()
     
-    newness = get_domain_newness(len(DD), DD, criteria=potential_threat_newness_criteria1)
+    newness = get_domain_newness(DD, criteria=potential_threat_newness_criteria1)
     with open("temp_output_newness_potential_threat.txt", "w") as f:
         for i in range(len(newness)):
             f.write("{} : {} {}\r\n".format(i,newness[i,0],newness[i,1]))

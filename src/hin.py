@@ -11,6 +11,8 @@ from ClientDomain import getClientQueriesDomainCSR
 from PathSim import PathSim
 from scipy.sparse import csr_matrix
 from affinity_matrix import affinity_matrix, converge
+from whois_newness import get_domain_newness
+import numpy as np
 
 def print_nnz_info(M: csr_matrix, name: str):
   """ Prints nnz info
@@ -83,6 +85,12 @@ def main():
   else:
     label = Label()
   labels = label.get_domain_labels(domain2index)
+  logging.info("Shape of labels: " + str(labels.shape))
+ 
+  ################## Update Labels according to newness ##########
+  labels_newness = get_domain_newness(domain2index)
+  print(np.unique(labels_newness[:,0], return_counts=True))
+  labels = labels + labels_newness
   logging.info("Shape of labels: " + str(labels.shape))
  
   ################### Domain similarity ##########################
