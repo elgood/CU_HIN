@@ -25,8 +25,12 @@ def whoisLookup_CreationDate(domainName2IndexDictionary, verbose=False):
 
     # records total number of lookups.
     count_totalLookups = 0
+    count_unknownTLD = 0
     count_FailedLookups = 0
     count_cacheLookups = 0
+
+    #the whois package only support these Top Level Domains (TLD)
+    known_tld = ['ac_uk', 'am', 'amsterdam', 'ar', 'at', 'au', 'bank', 'be', 'biz', 'br', 'by', 'ca', 'cc', 'cl', 'club', 'cn', 'co', 'co_il', 'co_jp', 'com', 'com_au', 'com_tr', 'cr', 'cz', 'de', 'download', 'edu', 'education', 'eu', 'fi', 'fm', 'fr', 'frl', 'game', 'global_', 'hk', 'id_', 'ie', 'im', 'in_', 'info', 'ink', 'io', 'ir', 'is_', 'it', 'jp', 'kr', 'kz', 'link', 'lt', 'lv', 'me', 'mobi', 'mu', 'mx', 'name', 'net', 'ninja', 'nl', 'nu', 'nyc', 'nz', 'online', 'org', 'pe', 'pharmacy', 'pl', 'press', 'pro', 'pt', 'pub', 'pw', 'rest', 'ru', 'ru_rf', 'rw', 'sale', 'se', 'security', 'sh', 'site', 'space', 'store', 'tech', 'tel', 'theatre', 'tickets', 'trade', 'tv', 'ua', 'uk', 'us', 'uz', 'video', 'website', 'wiki', 'work', 'xyz', 'za'] #02/23/2022
 
     # To save time, cache domains that continuously fail to query whois
     if path.exists('domainWhoisQueryFailCache.json'):
@@ -42,6 +46,11 @@ def whoisLookup_CreationDate(domainName2IndexDictionary, verbose=False):
             if domainName in cacheData.keys():
                 count_cacheLookups = count_cacheLookups+1
                 domainNameIndex2CreationDateDictionary[domainIndex] = cacheData[domainName]
+            elif domainName.split(".")[-1] not in known_tld:
+                # Unknown TLD
+                if (verbose):
+                    print("[-] UnknownTld : {}".format(domainName))
+                count_unknownTLD = count_unknownTLD + 1
             elif domainName in failCacheData.keys():
                 # if the domain is in fail cache, just skip to query
                 count_FailedLookups = count_FailedLookups+1
@@ -93,6 +102,11 @@ def whoisLookup_CreationDate(domainName2IndexDictionary, verbose=False):
                 if (verbose):
                     print("[-] Keep failing domain. Skip : {}".format(domainName))
                 pass
+            elif domainName.split(".")[-1] not in known_tld:
+                # Unknown TLD
+                if (verbose):
+                    print("[-] UnknownTld : {}".format(domainName))
+                count_unknownTLD = count_unknownTLD + 1
             else:
                 try:
                     if (verbose):
@@ -126,7 +140,7 @@ def whoisLookup_CreationDate(domainName2IndexDictionary, verbose=False):
 
     print(f"\nWhois lookups completed. The number of whois query : {count_totalLookups}, the number of cached lookup : {count_cacheLookups}")
 
-    return domainNameIndex2CreationDateDictionary, count_FailedLookups
+    return domainNameIndex2CreationDateDictionary, count_FailedLookups, count_unknownTLD
 
 def potential_threat_newness_criteria0(creation_date):
     # returns the score of potential threat on the creation date
@@ -161,7 +175,7 @@ def get_domain_newness(totalSize, domains: dict, criteria=potential_threat_newne
 
     #    newness[index, 0] = score # score is determined according to its newness due to its potential danger
     #    newness[index, 1] = 0     # the newness cannot affect the probability of goodness
-    creation_date, _ = whoisLookup_CreationDate(domains)
+    creation_date, _ , _ = whoisLookup_CreationDate(domains)
 
     labeled_addition = np.zeros((totalSize, 2))
     for domain, index in domains.items():
@@ -188,40 +202,24 @@ def main():
     filename = []
     filename = FLAGS.inputfile
 
-    #the whois package only support these Top Level Domains (TLD)
-    #known_tld = ['com', 'uk', 'ac_uk', 'ar', 'at', 'pl', 'be', 'biz', 'br', 'ca', 'cc', 'cl', 'club', 'cn', 'co', 'jp', 'co_jp', 'cz', 'de', 'store', 'download', 'edu', 'education', 'eu', 'fi', 'fr', 'id', 'in_', 'info', 'io', 'ir', 'is_is', 'it', 'kr', 'kz', 'lt', 'ru', 'lv', 'me', 'mobi', 'mx', 'name', 'net', 'ninja', 'se', 'nu', 'nyc', 'nz', 'online', 'org', 'pharmacy', 'press', 'pw', 'rest', 'ru_rf', 'security', 'sh', 'site', 'space', 'tech', 'tel', 'theatre', 'tickets', 'tv', 'us', 'uz', 'video', 'website', 'wiki', 'xyz']
-    known_tld = ['ac_uk', 'am', 'amsterdam', 'ar', 'at', 'au', 'bank', 'be', 'biz', 'br', 'by', 'ca', 'cc', 'cl', 'club', 'cn', 'co', 'co_il', 'co_jp', 'com', 'com_au', 'com_tr', 'cr', 'cz', 'de', 'download', 'edu', 'education', 'eu', 'fi', 'fm', 'fr', 'frl', 'game', 'global_', 'hk', 'id_', 'ie', 'im', 'in_', 'info', 'ink', 'io', 'ir', 'is_', 'it', 'jp', 'kr', 'kz', 'link', 'lt', 'lv', 'me', 'mobi', 'mu', 'mx', 'name', 'net', 'ninja', 'nl', 'nu', 'nyc', 'nz', 'online', 'org', 'pe', 'pharmacy', 'pl', 'press', 'pro', 'pt', 'pub', 'pw', 'rest', 'ru', 'ru_rf', 'rw', 'sale', 'se', 'security', 'sh', 'site', 'space', 'store', 'tech', 'tel', 'theatre', 'tickets', 'trade', 'tv', 'ua', 'uk', 'us', 'uz', 'video', 'website', 'wiki', 'work', 'xyz', 'za'] #02/23/2022
 
     # Calling dataprun package for whitelisted domain names and corresponding indexes
     print("Calling Dataprun package for whitelisted domain names......\n")
     RL,DD,IPD = GenerateWL(filename)
 
-    # Filtering the whitelisted domain_names provided by dataprun package
-    # with known TLDs supported by the whois package.
-    domainName2IndexDictionary = {}
-    
-    unknown_count = 0
-
-    for domainName,domainIndex in DD.items():
-        if domainName.split(".")[-1] in known_tld:
-            domainName2IndexDictionary[domainName] = domainIndex
-        else:
-            #print("[-] UnknownTld : {}".format(domainName))
-            unknown_count = unknown_count + 1
-            pass
     
     with open("temp_output_domainIndex.txt", "w") as f:
-        for i in domainName2IndexDictionary:
-            f.write("{} : {}\r\n".format(domainName2IndexDictionary[i], i))
+        for i in DD:
+            f.write("{} : {}\r\n".format(DD[i], i))
         f.close()
     
-    result,fail_count = whoisLookup_CreationDate(domainName2IndexDictionary)
+    result,fail_count,unknown_count = whoisLookup_CreationDate(DD)
     with open("temp_output_whois_creation.txt", "w") as f:
         for i in result:
             f.write("{} : {}\r\n".format(i,result[i]))
         f.close()
     
-    newness = get_domain_newness(len(DD), domainName2IndexDictionary, criteria=potential_threat_newness_criteria1)
+    newness = get_domain_newness(len(DD), DD, criteria=potential_threat_newness_criteria1)
     with open("temp_output_newness_potential_threat.txt", "w") as f:
         for i in range(len(newness)):
             f.write("{} : {} {}\r\n".format(i,newness[i,0],newness[i,1]))
