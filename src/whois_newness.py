@@ -3,6 +3,7 @@
 
  - Team members : Eloise, Minjeong, Byungkwon, Taeksang
  - python3 whois_newness.py --inputfile /data/examples/dns10000.log
+ - python3 whois_newness.py --inputfile /home/taje7696/uncompressed_dns/2021-08-02_dns.00:00:00-01:00:00.log
 """
 
 import argparse
@@ -237,9 +238,24 @@ def main():
 
     print(np.unique(newness[:,0], return_counts=True))
 
+    # printing label information
+    print(filename)
     #print(len(result))
-    #label = Label()
-    #labels = label.get_domain_labels(DD)
+    label = Label()
+    labels = label.get_domain_labels(DD)
+    print("# of malicious pre-labeled domains : {}".format(np.sum(labels, axis=0)[0]))
+    i=0
+    for d in DD:
+        if (labels[i][0] == 1):
+            print("[{}][{}] {}".format(labels[i,0], labels[i,1], d))
+        i+=1
+    print("# of benign    pre-labeled domains : {}".format(np.sum(labels, axis=0)[1]))
+    i=0
+    for d in DD:
+        if (labels[i][1] == 1):
+            print("[{}][{}] {}".format(labels[i,0], labels[i,1], d))
+        i+=1
+
     #print("labels.shape : {}".format(labels.shape)) # (1255,2)
     
     print("Total domain number from input: {}".format(len(DD)))
