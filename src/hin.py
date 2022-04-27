@@ -11,8 +11,17 @@ from ClientDomain import getClientQueriesDomainCSR
 from PathSim import PathSim
 from scipy.sparse import csr_matrix
 from affinity_matrix import affinity_matrix, converge
-from whois_newness import get_domain_newness
+from whois_newness import get_domain_newness, calculate_scores, split_kfold
 import numpy as np
+
+### apply newness domain score without K-fold
+# python3 hin.py --dns_files /data/examples/dns10000.log --netflow_files /data/examples/netflow10000.csv
+
+### not apply newness domain score without K-fold
+# python3 hin.py --dns_files /data/examples/dns10000.log --netflow_files /data/examples/netflow10000.csv --exclude_domain_newness
+
+### apply newness domain score with K-fold
+# python3 hin.py --dns_files /data/examples/dns10000.log --netflow_files /data/examples/netflow10000.csv --apply_kfold_crossvalidation --num_kfold=2 
 
 def print_nnz_info(M: csr_matrix, name: str):
   """ Prints nnz info
@@ -59,6 +68,16 @@ def main():
   parser.add_argument('--bad', type=str, default=None,
     help="Location of file with bad domains.")
 
+  # Exclude domain newness (NRD) : 04.26.2022
+  parser.add_argument('--exclude_domain_newness', action='store_true',
+    help="If set, domain newness will not be added to initial labels.")
+
+  # Apply K-fold cross validation : 04.26.2022
+  parser.add_argument('--apply_kfold_crossvalidation', action='store_true',
+    help="If set, k fold crossvalidation will be executed.")
+  parser.add_argument("--num_kfold", type=int, default=5,
+    help="Specifies the number of K in K fold cross validation")
+
   FLAGS = parser.parse_args()
   process_common_arguments(FLAGS)
 
@@ -67,7 +86,7 @@ def main():
   logging.info("Netflow files: " + str(FLAGS.netflow_files))
 
   RL, domain2index, ip2index =  GenerateWL(FLAGS.dns_files)
-  print(RL)
+  #print(RL)
   domain2ip = GenerateDomain2IP(RL, domain2index)
 
   numDomains = len(domain2ip) 
@@ -88,10 +107,12 @@ def main():
   logging.info("Shape of labels: " + str(labels.shape))
  
   ################## Update Labels according to newness ##########
-  labels_newness = get_domain_newness(domain2index)
-  print(np.unique(labels_newness[:,0], return_counts=True))
-  labels = labels + labels_newness
-  logging.info("Shape of labels: " + str(labels.shape))
+  # updated : 04.26.2022
+  if not FLAGS.exclude_domain_newness:
+      labels_newness = get_domain_newness(domain2index)
+      print(np.unique(labels_newness[:,0], return_counts=True))
+      labels = labels + labels_newness
+      logging.info("Shape of labels: " + str(labels.shape))
  
   ################### Domain similarity ##########################
   #if not FLAGS.exclude_domain_similarity:
@@ -224,12 +245,39 @@ def main():
   index2domain = {v: k for k, v in domain2index.items()}
 
   ################## Iterating to convergence ########################
+  # update : 04.26.2022
   time1 = time()
-  F = converge(M, labels, FLAGS.mu, FLAGS.tol)
-  print("Y F domain")
-  for i in range(len(F)):
-    print(labels[i,:], F[i,:], index2domain[i])
- 
+  print("All preparation finished. Starting convergence.")
+  if FLAGS.apply_kfold_crossvalidation:
+      kfold = FLAGS.num_kfold
+      print("With cross validation with k : {}".format(kfold))
+      statistics = []
+      # stratified k fold
+      skf, X, y = split_kfold(labels, kfold)
+      kth = 1
+      for train_index, test_index in skf.split(X, y):
+          labels_test_removed = labels.copy()
+          # remove pre-labels for test dataset
+          for i in test_index:
+              labels_test_removed[i][0] = 0
+              labels_test_removed[i][1] = 0
+
+          F = converge(M, labels_test_removed, FLAGS.mu, FLAGS.tol)
+          s = calculate_scores(labels, F, test_index, index2domain)
+          statistics.append(s)
+          # print
+          print("      [KFold #{}] : recall {}, precision {}, accuracy {}, f1_score {}, cover {}".format(kth, s[0], s[1], s[2], s[3], s[4]))
+          kth += 1
+      statistics = np.array(statistics)
+      avr = np.average(statistics, axis=0)
+      print("      [Average ] : recall {}, precision {}, accuracy {}, f1_score {}, cover {}".format(avr[0], avr[1], avr[2], avr[3], avr[4]))
+
+  else:
+      print("Without cross validation")
+      F = converge(M, labels, FLAGS.mu, FLAGS.tol)
+      print("Y F domain")
+      for i in range(len(F)):
+          print(labels[i,:], F[i,:], index2domain[i])
 
 if __name__ == '__main__':
   main()

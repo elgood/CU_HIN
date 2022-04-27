@@ -16,6 +16,8 @@ from dataprun import GenerateWL, GenerateDomain2IP
 import numpy as np
 from label import Label
 import datetime
+import sklearn.metrics
+from sklearn.model_selection import StratifiedKFold
 
 def whoisLookup_CreationDate(domainName2IndexDictionary, verbose=False):
     domainNameIndex2CreationDateDictionary = {}
@@ -189,6 +191,89 @@ def get_domain_newness(domains: dict, criteria=potential_threat_newness_criteria
             pass
 
     return labeled_addition
+
+def split_kfold(labels, k):
+    # update : 04.26.2022
+    # malicious and benign pre-labels are imbalanced.
+    # So it is important to keep the ratio of the classes when split into partitions.
+    # Also the records that malicious and benign at the same time, will be excluded for split.
+
+    counts_prelabeled_benign = 0
+    counts_prelabeled_malicious = 0
+    counts_unlabeled_or_both_labeled = 0
+    x = []
+    y = []
+    for i in range(len(labels)):
+        if (labels[i][0] > 0.5):
+            if (labels[i][1] <= 0.5):
+                counts_prelabeled_malicious += 1
+                x.append(i)
+                y.append(1)
+                continue
+        else:
+            if (labels[i][1] > 0.5):
+                counts_prelabeled_benign += 1
+                x.append(i)
+                y.append(0)
+                continue
+        counts_unlabeled_or_both_labeled += 1
+
+    print("Number of pre-labeled malicious     : {}".format(counts_prelabeled_malicious))
+    print("Number of pre-labeled benign        : {}".format(counts_prelabeled_benign))
+    print("Number of unlabeled or both labeled : {}".format(counts_unlabeled_or_both_labeled))
+
+    # stratified K fold
+    skf = StratifiedKFold(n_splits=k, shuffle=True)
+    skf.get_n_splits(np.array(x), np.array(y))
+
+    return skf, x, y
+
+
+def calculate_scores(y_true, y_pred, indices, domain, threshold=0.2):
+    # update : 04.26.2022
+    propagated_indices = []
+    for i in indices:
+        if (y_pred[i][0] > threshold):
+            propagated_indices.append(i)
+            print("[{:01.2f} {:01.2f}] [{:01.2f} {:01.2f}] {}".format(y_true[i][0], y_true[i][1], y_pred[i][0], y_pred[i][1], domain[i]))
+        elif (y_pred[i][1] > threshold):
+            propagated_indices.append(i)
+
+    propa_indices_np = np.array(propagated_indices, dtype=int)
+    indices_np = np.array(indices, dtype=int)
+    #y_true_np = np.array(y_true)[propa_indices_np]
+    #y_pred_np = np.array(y_pred)[propa_indices_np]
+    y_true_np = np.array(y_true)[indices_np]
+    y_pred_np = np.array(y_pred)[indices_np]
+    print(  "{} records propagated in testset".format(len(propa_indices_np)))
+    
+    true = np.argmax(y_true_np, axis=1)
+    pred = np.argmax(y_pred_np, axis=1)
+
+    # how much unlabeled record get propegated.
+    # cover = (counts of probability larger than threshold)/(total counts)
+    cover = 1.0 * len(propa_indices_np) / len(indices) 
+    return [sklearn.metrics.recall_score(true, pred),
+            sklearn.metrics.precision_score(true, pred),
+            sklearn.metrics.accuracy_score(true, pred),
+            sklearn.metrics.f1_score(true, pred),
+            cover]
+"""
+def precision_score(y_true, y_pred):
+    true = np.argmax(y_true, axis=1)
+    pred = np.argmax(y_pred, axis=1)
+    return sklearn.metrics.precision_score(true, pred)
+
+def accuracy_score(y_true, y_pred):
+    true = np.argmax(y_true, axis=1)
+    pred = np.argmax(y_pred, axis=1)
+    return sklearn.metrics.accuracy_score(true, pred)
+
+def f1_score(y_true, y_pred):
+    true = np.argmax(y_true, axis=1)
+    pred = np.argmax(y_pred, axis=1)
+    return sklearn.metrics.f1_score(true, pred)
+"""
 
 def main():
 
