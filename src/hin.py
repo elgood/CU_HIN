@@ -29,7 +29,7 @@ def main():
   parser = get_default_ArgumentParser(message)
   parser.add_argument("--dns_files", type=str, nargs='+', required=True,
     help="The dns log file(s) to use.")
-  parser.add_argument("--netflow_files", type=str, nargs='+', required=True,
+  parser.add_argument("--netflow_files", type=str, nargs='+', required=False,
     help="The netflow log file(s) to use.")
   parser.add_argument("--domain_similarity_threshold", type=float, default=0.5,
     help="The threshold to use to determine if a domain similarity is " +
@@ -100,16 +100,18 @@ def main():
 
 
   #################### ip to ip ###################################
-  if not FLAGS.exclude_ip2ip: 
-    time1 = time()
-    ip2ip = ip_to_ip(ip2index, FLAGS.netflow_files)
-    logging.info("Time for ip2ip " + 
-                 "{:.2f}".format(time() - time1))
-    print_nnz_info(ip2ip, "ip2ip")
-  else:
-    logging.info("Excluding ip2ip")
-    ip2ip = None
- 
+  # This isn't actually used right now
+  ip2ip = None
+  if FLAGS.netflow_files is not None: 
+    if not FLAGS.exclude_ip2ip: 
+      time1 = time()
+      ip2ip = ip_to_ip(ip2index, FLAGS.netflow_files)
+      logging.info("Time for ip2ip " + 
+                   "{:.2f}".format(time() - time1))
+      print_nnz_info(ip2ip, "ip2ip")
+    else:
+      logging.info("Excluding ip2ip")
+   
 
   ################### Domain resolve ip #############################
   if not FLAGS.exclude_domain2ip:
