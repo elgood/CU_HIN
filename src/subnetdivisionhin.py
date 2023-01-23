@@ -8,28 +8,46 @@ import re
 from cusubnetidentification import subnet_lookup
 
 
-parser = argparse.ArgumentParser(description="""Runs hin.py against a specific timeframe, using real campus DNS/Netflow Data. Identifies the Subnets that are responsible 
-for querying known and suspected malicious domains. Outputs results to ~/subnetdivisionhinOutput""")
-parser.add_argument("start_time", help="Provide a start time for analysis. Format (include quotes): \"yyyy-mm-dd hh:mm:ss\"")
-parser.add_argument("duration_seconds", help="Enter an int. Warning: analyzing more than a few minutes might take a very long time...")
-args = parser.parse_args()
-startscripttimer = time.time()
-
 def main():
+
+  parser = argparse.ArgumentParser(
+    description="Runs hin.py against a specific timeframe, using real campus" +
+      " DNS/Netflow Data. Identifies the Subnets that are responsible " +
+      "for querying known and suspected malicious domains. Outputs results" +
+      " to ~/subnetdivisionhinOutput")
+  parser.add_argument("start_time", 
+    help="Provide a start time for analysis. Format (include quotes):" +
+      " \"yyyy-mm-dd hh:mm:ss\"")
+  parser.add_argument("duration_seconds", 
+    help="Enter an int. Warning: analyzing more than a few minutes might " +
+      "take a very long time...")
+  parser.add_argument("--include_netflow", action="store_true",
+    help="If specified, will find associated netflow files.")
+
+  args = parser.parse_args()
+  startscripttimer = time.time()
+
   print('\nHere are the supplied args:')
   print('\nstart_time: ' + args.start_time)
   print('duration_seconds: ' + args.duration_seconds)
 
-  #Create the "pretty" timestamp that will be used for naming things consistently. S = Start, T = Time, D = Duration
-  #This will be used as the directory name for the output, which ends up in ~/subnetdivisionhinOutput
-  pretty_timestamp = 'S' + args.start_time[5:10] + 'T' + args.start_time[11:19] + 'D' + args.duration_seconds
-  print('\nCame up with this pretty_timestamp: ' + pretty_timestamp + '(S=Start, T=Time, D=Duration). This Timestamp will be used for naming temp and output directories.') 
+  # Create the "pretty" timestamp that will be used for naming things 
+  # consistently. S = Start, T = Time, D = Duration
+  # This will be used as the directory name for the output, 
+  # which ends up in ~/subnetdivisionhinOutput
+  pretty_timestamp = ('S' + args.start_time[5:10] + 'T' + 
+    args.start_time[11:19] + 'D' + args.duration_seconds)
+  print(f'\nCame up with this pretty_timestamp: {pretty_timestamp} ' + 
+    '(S=Start, T=Time, D=Duration). This Timestamp will be used for' +
+    ' naming temp and output directories.') 
 
   #Create temp dirs as needed, to be used for expanding DNS/Netflow data
   print('\nCreating temp directories, if necessary...')
-  temp_uncompress_path = os.path.expanduser('~/CU_HIN_temp_uncompressed/' + pretty_timestamp + '/')
+  temp_uncompress_path = os.path.expanduser('~/CU_HIN_temp_uncompressed/' + 
+                                            pretty_timestamp + '/')
   print('\nTesting for the existence of ' + temp_uncompress_path + '...')
-  if os.path.isdir(temp_uncompress_path) and os.path.exists(temp_uncompress_path):
+  if (os.path.isdir(temp_uncompress_path) and 
+      os.path.exists(temp_uncompress_path)):
     print('\nTemp Uncompressed temp dir already exists, no need to create it...')
   else:
     os.makedirs(os.path.expanduser(temp_uncompress_path), exist_ok=False)
@@ -45,10 +63,13 @@ def main():
   #Create the output dir, which will be within ~/subnetdivisionhinOutput/
   start_datetime = datetime.strptime(args.start_time, "%Y-%m-%d %H:%M:%S")
   print('\nThe specified Analysis start_time is ' + str(start_datetime))
-  end_datetime = start_datetime + timedelta(seconds = (int(args.duration_seconds)))
+  end_datetime = start_datetime + timedelta(seconds = 
+                  (int(args.duration_seconds)))
   print('The specified Analysis end_time is ' + str(end_datetime))
-  pretty_timestamp = 'S' + args.start_time[5:10] + 'T' + args.start_time[11:19] + 'D' + args.duration_seconds
-  temp_output_path = os.path.expanduser('~/subnetdivisionhinOutput/' + pretty_timestamp + '/')
+  pretty_timestamp = ('S' + args.start_time[5:10] + 'T' + 
+                     args.start_time[11:19] + 'D' + args.duration_seconds)
+  temp_output_path = os.path.expanduser('~/subnetdivisionhinOutput/' + 
+                       pretty_timestamp + '/')
   print('\nTesting for the existence of ' + temp_output_path + '...')
   if os.path.isdir(temp_output_path) and os.path.exists(temp_output_path):
     print('\nOutput dir already exists, no need to create it...')
@@ -59,19 +80,27 @@ def main():
   multi_dns_files_required = False
   multi_netflow_files_required = False
   #Determine which log files will be used, based on user input.
-  #As the Netflow files are in 15 min chunks, and the DNS logs are in 1 hour chunks, we sometimes need
+  #As the Netflow files are in 15 min chunks, and the DNS logs are in 
+  #1 hour chunks, we sometimes need
   #multiple log files to cover the specified time range
-  if int(str(start_datetime)[14:16]) > 00 and int(str(start_datetime)[14:16]) < 15:
+  if (int(str(start_datetime)[14:16]) > 00 and 
+      int(str(start_datetime)[14:16]) < 15):
     tempminutes = '00'
-    if int(str(start_datetime)[14:16]) + ((int(args.duration_seconds) + int(str(start_datetime)[17:19]))/60) >= 15:
-      print('\nThis will require multiple Netflow files, as the specified timeframe encompasses more than a single file of logging...')
+    if (int(str(start_datetime)[14:16]) + ((int(args.duration_seconds) + 
+        int(str(start_datetime)[17:19]))/60) >= 15):
+      print('\nThis will require multiple Netflow files, as the specified' +
+            ' timeframe encompasses more than a single file of logging...')
       multi_netflow_files_required = True
-  elif int(str(start_datetime)[14:16]) > 15 and int(str(start_datetime)[14:16]) < 30:
+  elif (int(str(start_datetime)[14:16]) > 15 and 
+        int(str(start_datetime)[14:16]) < 30):
     tempminutes = '15'
-    if int(str(start_datetime)[14:16]) + ((int(args.duration_seconds) + int(str(start_datetime)[17:19]))/60) >= 30:
-      print('\nThis will require multiple Netflow files, as the specified timeframe encompasses more than a single file of logging...')
+    if (int(str(start_datetime)[14:16]) + ((int(args.duration_seconds) + 
+        int(str(start_datetime)[17:19]))/60) >= 30):
+      print('\nThis will require multiple Netflow files, as the specified ' +
+            'timeframe encompasses more than a single file of logging...')
       multi_netflow_files_required = True
-  elif int(str(start_datetime)[14:16]) > 30 and int(str(start_datetime)[14:16]) < 45:
+  elif (int(str(start_datetime)[14:16]) > 30 and 
+        int(str(start_datetime)[14:16]) < 45):
     tempminutes = '30'
     if int(str(start_datetime)[14:16]) + ((int(args.duration_seconds) + int(str(start_datetime)[17:19]))/60) >= 45:
       print('\nThis will require multiple Netflow files, as the specified timeframe encompasses more than a single file of logging...')
@@ -85,59 +114,88 @@ def main():
       multi_netflow_files_required = True 
 
   #Figure out if we need to use multiple DNS log files
-  tempdnsfilename = str(start_datetime)[:10] + '_dns.' + str(start_datetime)[11:13] + ':00:00-' + ("{:02}".format(int(str(start_datetime)[11:13]) + 1)) + ':00:00.log.gz'
+  tempdnsfilename = (str(start_datetime)[:10] + '_dns.' + 
+    str(start_datetime)[11:13] + ':00:00-' + 
+    ("{:02}".format(int(str(start_datetime)[11:13]) + 1)) + ':00:00.log.gz')
   if multi_dns_files_required == True:
-    tempdnsfilename_supp = str(start_datetime)[:10] + '_dns.' + ("{:02}".format(int(str(start_datetime)[11:13]) + 1)) + ':00:00-' + ("{:02}".format(int(str(start_datetime)[11:13]) + 2)) + ':00:00.log.gz'
+    tempdnsfilename_supp = (str(start_datetime)[:10] + '_dns.' + 
+      ("{:02}".format(int(str(start_datetime)[11:13]) + 1)) + 
+      ':00:00-' + ("{:02}".format(int(str(start_datetime)[11:13]) + 2)) + 
+      ':00:00.log.gz')
     tempdns_supp_fullpath = '/data/dns/' + tempdnsfilename_supp
   tempdns_fullpath = '/data/dns/' + tempdnsfilename
-  print('\nBased on user input, the DNS log file that will be used: ' + tempdns_fullpath)
+  print('\nBased on user input, the DNS log file that will be used: ' + 
+        tempdns_fullpath)
   if multi_dns_files_required == True:
-    print('This is the supplemental DNS log file that will be used: ' + tempdns_supp_fullpath)
+    print('This is the supplemental DNS log file that will be used: ' + 
+          tempdns_supp_fullpath)
   
-  #Figure out if we need to use multiple Netflow files
-  tempnetflowfilename = 'ft-v05.' + str(start_datetime)[:10] + '.' + str(start_datetime)[11:13] + tempminutes + '00' + '-0600'
-  if os.path.exists('/data/' + tempnetflowfilename):
-    tempnetflow_fullpath = '/data/' + tempnetflowfilename
-    print('\nBased on user input, the Netflow file that will be used: ' + tempnetflow_fullpath)
+  if FLAGS.include_netflow:
+    #Figure out if we need to use multiple Netflow files
+    tempnetflowfilename = ('ft-v05.' + str(start_datetime)[:10] + '.' + 
+      str(start_datetime)[11:13] + tempminutes + '00' + '-0600')
+    if os.path.exists('/data/' + tempnetflowfilename):
+      tempnetflow_fullpath = '/data/' + tempnetflowfilename
+      print('\nBased on user input, the Netflow file that will be used: ' + 
+            tempnetflow_fullpath)
+      if multi_netflow_files_required == True:
+        if tempminutes == '45':
+          tempnetflowfilename_supp = ('ft-v05.' + str(start_datetime)[:10] + 
+            '.' + str(int(str(start_datetime)[11:13]) + 1) + '0000' + '-0600')
+        else:
+          tempnetflowfilename_supp = ('ft-v05.' + str(start_datetime)[:10] + 
+            '.' + str(start_datetime)[11:13] + str(int(tempminutes) + 15) + 
+            '00' + '-0600')
+        tempnetflow_supp_fullpath = '/data/' + tempnetflowfilename_supp
+    else:
+      tempnetflowfilename = ('ft-v05.' + str(start_datetime)[:10] + '.' + 
+        str(start_datetime)[11:13] + tempminutes + '01' + '-0600')
+      tempnetflow_fullpath = '/data/' + tempnetflowfilename
+      print('\nBased on user input, the Netflow file that will be used: ' + 
+            tempnetflow_fullpath)
+      if multi_netflow_files_required == True:
+        tempnetflowfilename_supp = ('ft-v05.' + str(start_datetime)[:10] + '.' + 
+          str(start_datetime)[11:13] + str(int(tempminutes) + 15) + '01' + 
+          '-0600')
+        tempnetflow_supp_fullpath = '/data/' + tempnetflowfilename_supp
     if multi_netflow_files_required == True:
-      if tempminutes == '45':
-        tempnetflowfilename_supp = 'ft-v05.' + str(start_datetime)[:10] + '.' + str(int(str(start_datetime)[11:13]) + 1) + '0000' + '-0600'
-      else:
-        tempnetflowfilename_supp = 'ft-v05.' + str(start_datetime)[:10] + '.' + str(start_datetime)[11:13] + str(int(tempminutes) + 15) + '00' + '-0600'
-      tempnetflow_supp_fullpath = '/data/' + tempnetflowfilename_supp
-  else:
-    tempnetflowfilename = 'ft-v05.' + str(start_datetime)[:10] + '.' + str(start_datetime)[11:13] + tempminutes + '01' + '-0600'
-    tempnetflow_fullpath = '/data/' + tempnetflowfilename
-    print('\nBased on user input, the Netflow file that will be used: ' + tempnetflow_fullpath)
-    if multi_netflow_files_required == True:
-      tempnetflowfilename_supp = 'ft-v05.' + str(start_datetime)[:10] + '.' + str(start_datetime)[11:13] + str(int(tempminutes) + 15) + '01' + '-0600'
-      tempnetflow_supp_fullpath = '/data/' + tempnetflowfilename_supp
-  if multi_netflow_files_required == True:
-    print('This is the supplemental Netflow file that will be used: ' + tempnetflow_supp_fullpath)
+      print('This is the supplemental Netflow file that will be used: ' + 
+            tempnetflow_supp_fullpath)
 
   #Copy DNS/Netflow files to the temp folder created in user's home directory
   print('\nCopying DNS log files...')
   shutil.copy(tempdns_fullpath, temp_compress_path)
   if multi_dns_files_required == True:
     shutil.copy(tempdns_supp_fullpath, temp_compress_path)
-  print('\nCopying Netflow files...')
-  shutil.copy(tempnetflow_fullpath, temp_compress_path)
-  if multi_netflow_files_required == True:
-    shutil.copy(tempnetflow_supp_fullpath, temp_compress_path)
+
+  if FLAGS.include_netflow:
+    print('\nCopying Netflow files...')
+    shutil.copy(tempnetflow_fullpath, temp_compress_path)
+    if multi_netflow_files_required == True:
+      shutil.copy(tempnetflow_supp_fullpath, temp_compress_path)
 
   #Use 'gunzip' and 'flow-export' bash commands to expand data files to the temp directories that were just created
   print('\nExpanding DNS files...')
-  temp_bash_string = 'gunzip -c ' + temp_compress_path + tempdnsfilename + ' > ' + temp_uncompress_path + tempdnsfilename[:-3]
+  temp_bash_string = ('gunzip -c ' + temp_compress_path + tempdnsfilename + 
+    ' > ' + temp_uncompress_path + tempdnsfilename[:-3])
   subprocess.call(temp_bash_string, shell=True)
   if multi_dns_files_required == True:
-    temp_bash_string_supp = 'gunzip -c ' + temp_compress_path + tempdnsfilename_supp + ' > ' + temp_uncompress_path + tempdnsfilename_supp[:-3]
+    temp_bash_string_supp = ('gunzip -c ' + temp_compress_path + 
+      tempdnsfilename_supp + ' > ' + temp_uncompress_path + 
+      tempdnsfilename_supp[:-3])
     subprocess.call(temp_bash_string_supp, shell=True)  
-  print('\nExpanding Netflow files...')
-  temp_bash_string = 'flow-export -f2 < ' + temp_compress_path + tempnetflowfilename + ' > ' + temp_uncompress_path + tempnetflowfilename + ".csv"
-  subprocess.call(temp_bash_string, shell=True)
-  if multi_netflow_files_required == True:
-    temp_bash_string_supp = 'flow-export -f2 < ' + temp_compress_path + tempnetflowfilename_supp + ' > ' + temp_uncompress_path + tempnetflowfilename_supp + ".csv"
-    subprocess.call(temp_bash_string_supp, shell=True)
+
+  if FLAGS.include_netflow:
+    print('\nExpanding Netflow files...')
+    temp_bash_string = ('flow-export -f2 < ' + temp_compress_path + 
+      tempnetflowfilename + ' > ' + temp_uncompress_path + 
+      tempnetflowfilename + ".csv")
+    subprocess.call(temp_bash_string, shell=True)
+    if multi_netflow_files_required == True:
+      temp_bash_string_supp = ('flow-export -f2 < ' + temp_compress_path + 
+        tempnetflowfilename_supp + ' > ' + temp_uncompress_path + 
+        tempnetflowfilename_supp + ".csv")
+      subprocess.call(temp_bash_string_supp, shell=True)
 
   #Remove headers and footers from data files as needed
   print('\nPreparing data files by removing header and footer lines...')
@@ -158,19 +216,20 @@ def main():
         for line in lines:
             f1.write(line)
 
-  #opens the Netflow file, skips the header, and writes out a new file
-  with open((temp_uncompress_path + tempnetflowfilename + '.csv'), 'r') as f:
-    lines = f.readlines()[1:]
-    with open(temp_uncompress_path + 'temp_netflow_expand.csv', 'w', encoding='UTF8', newline='') as f1:
-      for line in lines:
-          f1.write(line)
-  #If multi_netflow_files_required == True, append the second log to temp file, after removing headers/footers
-  if multi_netflow_files_required == True:
-    with open((temp_uncompress_path + tempnetflowfilename_supp + '.csv'), 'r') as f:
+  if FLAGS.include_netflow:
+    #opens the Netflow file, skips the header, and writes out a new file
+    with open((temp_uncompress_path + tempnetflowfilename + '.csv'), 'r') as f:
       lines = f.readlines()[1:]
-      with open(temp_uncompress_path + 'temp_netflow_expand.csv', 'a', encoding='UTF8', newline='') as f1:
+      with open(temp_uncompress_path + 'temp_netflow_expand.csv', 'w', encoding='UTF8', newline='') as f1:
         for line in lines:
-          f1.write(line)
+            f1.write(line)
+    #If multi_netflow_files_required == True, append the second log to temp file, after removing headers/footers
+    if multi_netflow_files_required == True:
+      with open((temp_uncompress_path + tempnetflowfilename_supp + '.csv'), 'r') as f:
+        lines = f.readlines()[1:]
+        with open(temp_uncompress_path + 'temp_netflow_expand.csv', 'a', encoding='UTF8', newline='') as f1:
+          for line in lines:
+            f1.write(line)
 
   #Pick out only the log lines within the specified timeframe, and store them in a new file
   print('\nIsolating the log lines that are within the specified timeframe...')
@@ -188,23 +247,30 @@ def main():
           if ((temp_datetime >= start_datetime) and (temp_datetime < end_datetime)):
             #print('the current line falls within the specified timeframe, and will be analyzed')
             f1.write(line)
-  #opens the temp Netflow file
-  with open((temp_uncompress_path + 'temp_netflow_expand.csv'), 'r') as f:
-    lines = f.readlines()
-    with open(temp_uncompress_path + 'netflow_expand.csv', 'w', encoding='UTF8', newline='') as f1:
-      for line in lines:
-          temp_epochtime = int(line[:10])
-          #print('this is the current line\'s epoch time: ' + str(temp_epochtime))
-          temp_datetime = datetime.fromtimestamp(temp_epochtime)
-          #print('the current line\'s epoch time, ' + str(temp_epochtime) + 'converted to a datetime: ' + str(temp_datetime))
-          if ((temp_datetime >= start_datetime) and (temp_datetime < end_datetime)):
-            #print('the current line falls within the specified timeframe, and will be analyzed')
-            f1.write(line)
+
+  if FLAGS.include_netflow
+    #opens the temp Netflow file
+    with open((temp_uncompress_path + 'temp_netflow_expand.csv'), 'r') as f:
+      lines = f.readlines()
+      with open(temp_uncompress_path + 'netflow_expand.csv', 'w', encoding='UTF8', newline='') as f1:
+        for line in lines:
+            temp_epochtime = int(line[:10])
+            #print('this is the current line\'s epoch time: ' + str(temp_epochtime))
+            temp_datetime = datetime.fromtimestamp(temp_epochtime)
+            #print('the current line\'s epoch time, ' + str(temp_epochtime) + 'converted to a datetime: ' + str(temp_datetime))
+            if ((temp_datetime >= start_datetime) and (temp_datetime < end_datetime)):
+              #print('the current line falls within the specified timeframe, and will be analyzed')
+              f1.write(line)
 
   #Now that we have our prepared DNS and Netflow files, actually execute hin.py, using the newly generated DNS/Netflow files as input.
   #Output to file 'output.log' in the output dir
-  temp_bash_string = 'python hin.py --loglevel debug --dns_files ' + temp_uncompress_path + 'dns_expand.log --netflow_files '
-  temp_bash_string += temp_uncompress_path + 'netflow_expand.csv --affinity_threshold 0.1 --exclude_ip2ip > ' + temp_uncompress_path + 'output.log'
+  temp_bash_string = ('python hin.py --loglevel debug --dns_files ' + 
+    temp_uncompress_path + 'dns_expand.log ' )
+  if FLAGS.include_netflow:
+    temp_bash_string += (' --netflow_files ' + temp_uncompress_path + 
+      'netflow_expand.csv ')
+  temp_bash_string += ('--affinity_threshold 0.1 --exclude_ip2ip > ' +
+       temp_uncompress_path + 'output.log')
   print('\nAbout to run this bash command:\n')
   print(temp_bash_string)
   time.sleep(15)
