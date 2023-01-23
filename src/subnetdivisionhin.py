@@ -248,7 +248,7 @@ def main():
             #print('the current line falls within the specified timeframe, and will be analyzed')
             f1.write(line)
 
-  if FLAGS.include_netflow
+  if FLAGS.include_netflow:
     #opens the temp Netflow file
     with open((temp_uncompress_path + 'temp_netflow_expand.csv'), 'r') as f:
       lines = f.readlines()
