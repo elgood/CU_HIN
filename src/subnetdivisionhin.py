@@ -7,6 +7,69 @@ import time
 import re
 from cusubnetidentification import subnet_lookup
 
+def create_temp_dirs(pretty_timestamp: str):
+  """ Creates temporary directory where intermediate data goes. 
+  
+  Arguemnts:
+  pretty_timestamp: str - A string representation of a timestamp. Used for
+    naming things.
+
+  Returns:
+  temp_uncompress_path - Path to the uncompressed data.
+  temp_compress_path - Path to the compressed data.
+  
+  """
+  #Create temp dirs as needed, to be used for expanding DNS/Netflow data
+  print('\nCreating temp directories, if necessary...')
+  temp_uncompress_path = os.path.expanduser('~/CU_HIN_temp_uncompressed/' + 
+                                            pretty_timestamp + '/')
+  print('\nTesting for the existence of ' + temp_uncompress_path + '...')
+  if (os.path.isdir(temp_uncompress_path) and 
+      os.path.exists(temp_uncompress_path)):
+    print('\nTemp Uncompressed temp dir already exists, no need to create it.')
+  else:
+    os.makedirs(os.path.expanduser(temp_uncompress_path), exist_ok=False)
+    print('\nTemp Uncompressed temp dir does not exist, making it now...')
+  temp_compress_path = os.path.expanduser(
+      f'~/CU_HIN_temp_compressed/{pretty_timestamp}/')
+  print('\nTesting for the existence of ' + temp_compress_path + '...')
+  if os.path.isdir(temp_compress_path) and os.path.exists(temp_compress_path):
+    print('\nTemp Compressed temp dir already exists, no need to create it...')
+  else:
+    os.makedirs(os.path.expanduser(temp_compress_path), exist_ok=False)
+    print('\nTemp Compressed temp dir does not exist, making it now...')
+
+  return temp_uncompress_path, temp_compress_path
+
+def create_output_dir(args):
+  """ Creates the output directory, located at ~/subnetdivisionhinOutput/
+
+  Arguments:
+  args - The command line arguments.
+
+  Returns:
+  start_datetime - When to start
+  end_datatime - When to end
+
+  """
+  start_datetime = datetime.strptime(args.start_time, "%Y-%m-%d %H:%M:%S")
+  print('\nThe specified Analysis start_time is ' + str(start_datetime))
+  end_datetime = start_datetime + timedelta(seconds = 
+                  (int(args.duration_seconds)))
+  print('The specified Analysis end_time is ' + str(end_datetime))
+  pretty_timestamp = ('S' + args.start_time[5:10] + 'T' + 
+                     args.start_time[11:19] + 'D' + args.duration_seconds)
+  temp_output_path = os.path.expanduser('~/subnetdivisionhinOutput/' + 
+                       pretty_timestamp + '/')
+  print('\nTesting for the existence of ' + temp_output_path + '...')
+  if os.path.isdir(temp_output_path) and os.path.exists(temp_output_path):
+    print('\nOutput dir already exists, no need to create it...')
+  else:
+    os.makedirs(temp_output_path, exist_ok=False)
+    print('\nOutput dir does not exist, making it now...')
+
+  return start_datetime, end_datetime, temp_output_path
+
 
 def main():
 
@@ -41,41 +104,9 @@ def main():
     '(S=Start, T=Time, D=Duration). This Timestamp will be used for' +
     ' naming temp and output directories.') 
 
-  #Create temp dirs as needed, to be used for expanding DNS/Netflow data
-  print('\nCreating temp directories, if necessary...')
-  temp_uncompress_path = os.path.expanduser('~/CU_HIN_temp_uncompressed/' + 
-                                            pretty_timestamp + '/')
-  print('\nTesting for the existence of ' + temp_uncompress_path + '...')
-  if (os.path.isdir(temp_uncompress_path) and 
-      os.path.exists(temp_uncompress_path)):
-    print('\nTemp Uncompressed temp dir already exists, no need to create it...')
-  else:
-    os.makedirs(os.path.expanduser(temp_uncompress_path), exist_ok=False)
-    print('\nTemp Uncompressed temp dir does not exist, making it now...')
-  temp_compress_path = os.path.expanduser('~/CU_HIN_temp_compressed/' + pretty_timestamp + '/')
-  print('\nTesting for the existence of ' + temp_compress_path + '...')
-  if os.path.isdir(temp_compress_path) and os.path.exists(temp_compress_path):
-    print('\nTemp Compressed temp dir already exists, no need to create it...')
-  else:
-    os.makedirs(os.path.expanduser(temp_compress_path), exist_ok=False)
-    print('\nTemp Compressed temp dir does not exist, making it now...')
+  temp_uncompress_path, temp_compress_path = create_temp_dirs(pretty_timestamp)
+  start_datetime, end_datetime, temp_output_path = create_output_dir(args)
 
-  #Create the output dir, which will be within ~/subnetdivisionhinOutput/
-  start_datetime = datetime.strptime(args.start_time, "%Y-%m-%d %H:%M:%S")
-  print('\nThe specified Analysis start_time is ' + str(start_datetime))
-  end_datetime = start_datetime + timedelta(seconds = 
-                  (int(args.duration_seconds)))
-  print('The specified Analysis end_time is ' + str(end_datetime))
-  pretty_timestamp = ('S' + args.start_time[5:10] + 'T' + 
-                     args.start_time[11:19] + 'D' + args.duration_seconds)
-  temp_output_path = os.path.expanduser('~/subnetdivisionhinOutput/' + 
-                       pretty_timestamp + '/')
-  print('\nTesting for the existence of ' + temp_output_path + '...')
-  if os.path.isdir(temp_output_path) and os.path.exists(temp_output_path):
-    print('\nOutput dir already exists, no need to create it...')
-  else:
-    os.makedirs(temp_output_path, exist_ok=False)
-    print('\nOutput dir does not exist, making it now...')
 
   multi_dns_files_required = False
   multi_netflow_files_required = False
@@ -130,7 +161,7 @@ def main():
     print('This is the supplemental DNS log file that will be used: ' + 
           tempdns_supp_fullpath)
   
-  if FLAGS.include_netflow:
+  if args.include_netflow:
     #Figure out if we need to use multiple Netflow files
     tempnetflowfilename = ('ft-v05.' + str(start_datetime)[:10] + '.' + 
       str(start_datetime)[11:13] + tempminutes + '00' + '-0600')
@@ -168,7 +199,7 @@ def main():
   if multi_dns_files_required == True:
     shutil.copy(tempdns_supp_fullpath, temp_compress_path)
 
-  if FLAGS.include_netflow:
+  if args.include_netflow:
     print('\nCopying Netflow files...')
     shutil.copy(tempnetflow_fullpath, temp_compress_path)
     if multi_netflow_files_required == True:
@@ -185,7 +216,7 @@ def main():
       tempdnsfilename_supp[:-3])
     subprocess.call(temp_bash_string_supp, shell=True)  
 
-  if FLAGS.include_netflow:
+  if args.include_netflow:
     print('\nExpanding Netflow files...')
     temp_bash_string = ('flow-export -f2 < ' + temp_compress_path + 
       tempnetflowfilename + ' > ' + temp_uncompress_path + 
@@ -216,7 +247,7 @@ def main():
         for line in lines:
             f1.write(line)
 
-  if FLAGS.include_netflow:
+  if args.include_netflow:
     #opens the Netflow file, skips the header, and writes out a new file
     with open((temp_uncompress_path + tempnetflowfilename + '.csv'), 'r') as f:
       lines = f.readlines()[1:]
@@ -248,7 +279,7 @@ def main():
             #print('the current line falls within the specified timeframe, and will be analyzed')
             f1.write(line)
 
-  if FLAGS.include_netflow:
+  if args.include_netflow:
     #opens the temp Netflow file
     with open((temp_uncompress_path + 'temp_netflow_expand.csv'), 'r') as f:
       lines = f.readlines()
@@ -266,7 +297,7 @@ def main():
   #Output to file 'output.log' in the output dir
   temp_bash_string = ('python hin.py --loglevel debug --dns_files ' + 
     temp_uncompress_path + 'dns_expand.log ' )
-  if FLAGS.include_netflow:
+  if args.include_netflow:
     temp_bash_string += (' --netflow_files ' + temp_uncompress_path + 
       'netflow_expand.csv ')
   temp_bash_string += ('--affinity_threshold 0.1 --exclude_ip2ip > ' +
@@ -341,11 +372,11 @@ def main():
   subprocess.call(temp_bash_string, shell=True)
 
 
+  endscripttimer = time.time()
+  print("\nTotal Run Time:" + str(timedelta(seconds=(endscripttimer-startscripttimer))))
 
 
 main()
 
-endscripttimer = time.time()
-print("\nTotal Run Time:" + str(timedelta(seconds=(endscripttimer-startscripttimer))))
 
 
