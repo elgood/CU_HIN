@@ -224,7 +224,9 @@ def main():
   for i in range(len(F)):
     print(labels[i,:], F[i,:], index2domain[i])
  
-  # TODO Write a file
+#write a file of the results 
+
+
 
 if __name__ == '__main__':
   main()
