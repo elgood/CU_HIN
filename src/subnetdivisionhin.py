@@ -5,6 +5,7 @@ import shutil
 import subprocess
 import time
 import re
+import pytz
 from cusubnetidentification import subnet_lookup
 
 def create_temp_dirs(pretty_timestamp: str):
@@ -86,6 +87,8 @@ def main():
       "take a very long time...")
   parser.add_argument("--include_netflow", action="store_true",
     help="If specified, will find associated netflow files.")
+  parser.add_argument("--dns_dir", type=str, default="/mnt/datastore/dns/",
+    help="Where the dns logs are found.")
 
   args = parser.parse_args()
   startscripttimer = time.time()
@@ -93,7 +96,7 @@ def main():
   print('\nHere are the supplied args:')
   print('\nstart_time: ' + args.start_time)
   print('duration_seconds: ' + args.duration_seconds)
-
+  
   # Create the "pretty" timestamp that will be used for naming things 
   # consistently. S = Start, T = Time, D = Duration
   # This will be used as the directory name for the output, 
@@ -139,9 +142,11 @@ def main():
   else:
     tempminutes = '45'
     if (int(str(start_datetime)[14:16]) + ((int(args.duration_seconds) + int(str(start_datetime)[17:19]))/60)) >= 60:
-      print('\nThis will require multiple DNS log files, as the specified timeframe encompasses more than a single file of logging...')
+      print('\nThis will require multiple DNS log files, as the specified' +
+            'timeframe encompasses more than a single file of logging...')
       multi_dns_files_required = True
-      print('\nThis will require multiple Netflow files, as the specified timeframe encompasses more than a single file of logging...')
+      print('\nThis will require multiple Netflow files, as the specified' +
+            'timeframe encompasses more than a single file of logging...')
       multi_netflow_files_required = True 
 
   #Figure out if we need to use multiple DNS log files
@@ -153,8 +158,8 @@ def main():
       ("{:02}".format(int(str(start_datetime)[11:13]) + 1)) + 
       ':00:00-' + ("{:02}".format(int(str(start_datetime)[11:13]) + 2)) + 
       ':00:00.log.gz')
-    tempdns_supp_fullpath = '/data/dns/' + tempdnsfilename_supp
-  tempdns_fullpath = '/data/dns/' + tempdnsfilename
+    tempdns_supp_fullpath =  args.dns_dir + tempdnsfilename_supp
+  tempdns_fullpath = args.dns_dir + tempdnsfilename
   print('\nBased on user input, the DNS log file that will be used: ' + 
         tempdns_fullpath)
   if multi_dns_files_required == True:
@@ -235,7 +240,8 @@ def main():
   with open((temp_uncompress_path + tempdnsfilename[:-3]), 'r') as f:
     lines = f.readlines()[8:]
     lines = lines[:-1]
-    with open(temp_uncompress_path + 'temp_dns_expand.log', 'w', encoding='UTF8', newline='') as f1:
+    with open(temp_uncompress_path + 'temp_dns_expand.log', 'w', 
+              encoding='UTF8', newline='') as f1:
       for line in lines:
           f1.write(line)
   #If multi_dns_files_required == True, append the second log to temp file, after removing headers/footers
@@ -243,7 +249,8 @@ def main():
     with open((temp_uncompress_path + tempdnsfilename_supp[:-3]), 'r') as f:
       lines = f.readlines()[8:]
       lines = lines[:-1]
-      with open(temp_uncompress_path + 'temp_dns_expand.log', 'a', encoding='UTF8', newline='') as f1:
+      with open(temp_uncompress_path + 'temp_dns_expand.log', 'a', 
+                encoding='UTF8', newline='') as f1:
         for line in lines:
             f1.write(line)
 
@@ -262,18 +269,23 @@ def main():
           for line in lines:
             f1.write(line)
 
-  #Pick out only the log lines within the specified timeframe, and store them in a new file
+  # Pick out only the log lines within the specified timeframe, 
+  # and store them in a new file
   print('\nIsolating the log lines that are within the specified timeframe...')
   #opens the temp DNS file
   with open((temp_uncompress_path + 'temp_dns_expand.log'), 'r') as f:
     lines = f.readlines()
-    #Somewhere around here, put a test check if nothing is ever added to the file 'dns_expand.log',
+    #Somewhere around here, put a test check if nothing is ever added 
+    # to the file 'dns_expand.log',
     #which would indicate that no malicious domains were found
-    with open(temp_uncompress_path + 'dns_expand.log', 'w', encoding='UTF8', newline='') as f1:
+    with open(temp_uncompress_path + 'dns_expand.log', 'w', 
+              encoding='UTF8', newline='') as f1:
       for line in lines:
           temp_epochtime = int(line[:10])
-          #print('this is the current line\'s epoch time: ' + str(temp_epochtime))
-          temp_datetime = datetime.fromtimestamp(temp_epochtime)
+          #print('this is the current line\'s epoch time: '+str(temp_epochtime))
+          temp_datetime = datetime.fromtimestamp(temp_epochtime, 
+                                    tzinfo=pytz.UTC)
+          print("temp_datetime", temp_datetime)
           #print('the current line\'s epoch time, converted to a datetime: ' + str(temp_datetime))
           if ((temp_datetime >= start_datetime) and (temp_datetime < end_datetime)):
             #print('the current line falls within the specified timeframe, and will be analyzed')
@@ -365,11 +377,11 @@ def main():
   #DO LAST
 
   #Clean up temp stuff--Delete temp compress and uncompress folders
-  print('\nCleaning up temp files...')
-  temp_bash_string = 'rm -rf ' + temp_compress_path
-  subprocess.call(temp_bash_string, shell=True)
-  temp_bash_string = 'rm -rf ' + temp_uncompress_path
-  subprocess.call(temp_bash_string, shell=True)
+  #print('\nCleaning up temp files...')
+  #temp_bash_string = 'rm -rf ' + temp_compress_path
+  #subprocess.call(temp_bash_string, shell=True)
+  #temp_bash_string = 'rm -rf ' + temp_uncompress_path
+  #subprocess.call(temp_bash_string, shell=True)
 
 
   endscripttimer = time.time()

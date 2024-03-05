@@ -315,6 +315,7 @@ def GenerateWL(LogLists,kd=1,ka=1,kc=1,kip=1,ShowTime=True):
 
     
     st = datetime.now()
+    #import pdb; pdb.set_trace()
     RL,DD,CD,IPD,TCalls = ReadInLogs(LogLists)
     et = datetime.now()
     tt = et - st
